@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+  <title>Admin Dashboard - Organization Directory</title>
+  <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght@100..700,0..1&display=swap" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+  <script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          colors: {
+            "primary": "#f20d0d",
+            "background-light": "#f8f5f5",
+            "background-dark": "#221010",
+          },
+          fontFamily: { "display": ["Public Sans"] },
+          borderRadius: {
+            "DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"
+          },
+        },
+      },
+    }
+  </script>
+  <style>
+    body { font-family: 'Public Sans', sans-serif; }
+    .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+    body { min-height: max(884px, 100dvh); }
+    .no-scrollbar::-webkit-scrollbar { display: none; }
+    .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+  </style>
+</head>
+<body class="bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100">
+  <div class="relative flex min-h-screen flex-col overflow-x-hidden">
+
+    <!-- Header -->
+    <header class="sticky top-0 z-50 flex items-center bg-white dark:bg-background-dark/90 backdrop-blur-md p-4 border-b border-primary/10 justify-between">
+      <div class="flex items-center gap-3">
+        <span class="material-symbols-outlined text-primary text-2xl">menu</span>
+        <h1 class="text-lg font-bold leading-tight tracking-tight">Admin Dashboard</h1>
+      </div>
+      <div class="flex items-center gap-2">
+        <button class="relative p-2 rounded-full hover:bg-primary/5 text-slate-700 dark:text-slate-300">
+          <span class="material-symbols-outlined">notifications</span>
+          <span class="absolute top-2 right-2 flex h-2 w-2 rounded-full bg-primary"></span>
+        </button>
+        <div class="h-8 w-8 rounded-full bg-primary/20 flex items-center justify-center overflow-hidden border border-primary/30">
+          <img class="h-full w-full object-cover" alt="Admin user profile avatar"
+            src="https://lh3.googleusercontent.com/aida-public/AB6AXuAnS9IlviPm2e66u3OxR0_FiSFMJohyp-dSVflIUjULYc4ss3JqTNIEHUKZXrZk_gH-xMsWXXK3agWfH3gPah5Gek0_50HtN0l-IzrMHYxvYghqxMmlTUntuGbYtb7xH1-PTxEFhT7mITlSJUxEG9-z7rsTe4eoIFEYQ3VPeJSpl0szEjqfyu2FGAzN4MNS4Fb1AUrbefUS7UR0pDFFqRdnxX7h9N1ucqgLWtDEf3GLAve3WId1iv5Pwslun4fDGXQZ8MnTj_YRbA"/>
+        </div>
+      </div>
+    </header>
+
+    <main class="flex-1 pb-24">
+
+      <!-- Stats Cards -->
+      <section class="p-4 grid grid-cols-2 gap-3">
+        <div class="flex flex-col gap-1 rounded-xl p-4 bg-white dark:bg-slate-900 shadow-sm border border-primary/5">
+          <span class="text-primary text-sm font-semibold uppercase tracking-wider">Total Members</span>
+          <p class="text-2xl font-bold">1,240</p>
+          <div class="flex items-center gap-1 text-emerald-600 text-xs font-medium">
+            <span class="material-symbols-outlined text-xs">trending_up</span>
+            <span>+5%</span>
+          </div>
+        </div>
+        <div class="flex flex-col gap-1 rounded-xl p-4 bg-white dark:bg-slate-900 shadow-sm border border-primary/5">
+          <span class="text-primary text-sm font-semibold uppercase tracking-wider">Active Staff</span>
+          <p class="text-2xl font-bold">85</p>
+          <div class="flex items-center gap-1 text-emerald-600 text-xs font-medium">
+            <span class="material-symbols-outlined text-xs">trending_up</span>
+            <span>+2.1%</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- Organization Contacts -->
+      <section class="px-4 pb-4">
+        <div class="flex items-center justify-between mb-4">
+          <h2 class="text-xl font-bold">Organization Contacts</h2>
+          <button class="flex items-center gap-1 bg-primary text-white px-3 py-1.5 rounded-lg text-sm font-semibold shadow-md shadow-primary/20 hover:bg-primary/90 transition-colors">
+            <span class="material-symbols-outlined text-sm">add</span>
+            <span>Add New</span>
+          </button>
+        </div>
+
+        <!-- Search -->
+        <div class="mb-4">
+          <div class="relative group">
+            <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400 group-focus-within:text-primary transition-colors">
+              <span class="material-symbols-outlined">search</span>
+            </span>
+            <input class="w-full pl-10 pr-4 py-3 bg-white dark:bg-slate-900 border-none rounded-xl shadow-sm focus:ring-2 focus:ring-primary/50 text-base outline-none transition-all placeholder:text-slate-400"
+              placeholder="Search teachers, staff, or members..." type="text"/>
+          </div>
+        </div>
+
+        <!-- Filter Chips -->
+        <div class="flex gap-2 overflow-x-auto pb-2 no-scrollbar">
+          <button class="whitespace-nowrap px-4 py-1.5 rounded-full bg-primary text-white text-sm font-medium">All Contacts</button>
+          <button class="whitespace-nowrap px-4 py-1.5 rounded-full bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 text-sm font-medium border border-primary/10">Teachers</button>
+          <button class="whitespace-nowrap px-4 py-1.5 rounded-full bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 text-sm font-medium border border-primary/10">Staff</button>
+          <button class="whitespace-nowrap px-4 py-1.5 rounded-full bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 text-sm font-medium border border-primary/10">Members</button>
+        </div>
+
+        <!-- Contact Cards -->
+        <div class="mt-4 space-y-3">
+
+          <!-- Sarah Johnson -->
+          <div class="bg-white dark:bg-slate-900 p-4 rounded-xl shadow-sm border border-primary/5 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+              <div class="h-12 w-12 rounded-lg bg-primary/10 flex items-center justify-center overflow-hidden border border-primary/5">
+                <img class="h-full w-full object-cover" alt="Portrait of Sarah Johnson, teacher"
+                  src="https://lh3.googleusercontent.com/aida-public/AB6AXuArM5gvjhCxTRxMZAwUwYR4s7lOGDVr8n_m4P4l2d_70ehpbKNs2b9ea1VhrwBbMIgMm-2XU5R_on7j0Cy3e0fxVJCXg4d66jIrBJj6pBsRt5-TtmisGLlGNAqQA_RUBQ6Ganb1s4SLHkNZ8rfKt9qGyjBQWzx_cIAIc9Mn3_e6BZ8FVVAIDI7RoVyrA2GxqAlzBkSI0bGHKTW60auCUUdxwSrQnd8zM4K3M25UCHfQTsz3h8edfUjuxBCpj0r1ENFB9n-lDzIcZg"/>
+              </div>
+              <div>
+                <h3 class="font-bold text-slate-900 dark:text-slate-100">Sarah Johnson</h3>
+                <p class="text-xs font-medium text-primary uppercase">Mathematics Teacher</p>
+                <p class="text-xs text-slate-500 flex items-center gap-1 mt-0.5">
+                  <span class="material-symbols-outlined text-[14px]">mail</span>sarah.j@edu.org
+                </p>
+              </div>
+            </div>
+            <div class="flex gap-1">
+              <button class="p-2 text-slate-400 hover:text-primary transition-colors"><span class="material-symbols-outlined text-[20px]">edit</span></button>
+              <button class="p-2 text-slate-400 hover:text-primary transition-colors"><span class="material-symbols-outlined text-[20px]">delete</span></button>
+            </div>
+          </div>
+
+          <!-- Michael Chen -->
+          <div class="bg-white dark:bg-slate-900 p-4 rounded-xl shadow-sm border border-primary/5 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+              <div class="h-12 w-12 rounded-lg bg-primary/10 flex items-center justify-center overflow-hidden border border-primary/5">
+                <img class="h-full w-full object-cover" alt="Portrait of Michael Chen, admissions staff"
+                  src="https://lh3.googleusercontent.com/aida-public/AB6AXuDWt86mNgB5kZ1sdRAKLCa3ZoKgJZg3WqQE0-rckEMrWFUw5pX2Ow9c2P-VL1d-1ur9FVOf8IthA_RcqiaCcH17oqAcDys85w39RTdZDAnSoR_TorIuDyAtnXB9sZwYO_1_bwaf8-6omd97aOS0gRgMyp-KuLacjzUNmzY1kmomVWzTKg9WGA4--_Ft770-pslRc92mNLAL81Frr3F85uMkaSXSmMJHZOQyLHOMFkO4QUMlIcbgIYjDYGas6o62JE_UbMSKn23MWQ"/>
+              </div>
+              <div>
+                <h3 class="font-bold text-slate-900 dark:text-slate-100">Michael Chen</h3>
+                <p class="text-xs font-medium text-slate-600 dark:text-slate-400 uppercase">Admissions Staff</p>
+                <p class="text-xs text-slate-500 flex items-center gap-1 mt-0.5">
+                  <span class="material-symbols-outlined text-[14px]">call</span>+1 (555) 012-3456
+                </p>
+              </div>
+            </div>
+            <div class="flex gap-1">
+              <button class="p-2 text-slate-400 hover:text-primary transition-colors"><span class="material-symbols-outlined text-[20px]">edit</span></button>
+              <button class="p-2 text-slate-400 hover:text-primary transition-colors"><span class="material-symbols-outlined text-[20px]">delete</span></button>
+            </div>
+          </div>
+
+          <!-- David Wilson -->
+          <div class="bg-white dark:bg-slate-900 p-4 rounded-xl shadow-sm border border-primary/5 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+              <div class="h-12 w-12 rounded-lg bg-primary/10 flex items-center justify-center overflow-hidden border border-primary/5">
+                <img class="h-full w-full object-cover" alt="Portrait of David Wilson, club member"
+                  src="https://lh3.googleusercontent.com/aida-public/AB6AXuC5fJpFBeS628WkCtVAcUoQiS3kR5EZJcdL4KdLW2cDyLGZdD97wZzQxr79CBfsY5Iwb3bgYTokMZfbQ1aH0ABuSw9lNhUGATx5tBp9ULUtKWS70i_YIvBfYP2EQzEz8OQIcvh8HfGFuMSaL1orX-xAz2wr8LU2xjKuoZtxCrI5M8E21xmQvhtMm11XpLuCcb60wfuTeN3nmumTRbBoQWYH2gHMSfCm9-n3eh0u_UzxrxOPbkFQRg7Zr7pAEynFHbesdcCD0Cabug"/>
+              </div>
+              <div>
+                <h3 class="font-bold text-slate-900 dark:text-slate-100">David Wilson</h3>
+                <p class="text-xs font-medium text-slate-600 dark:text-slate-400 uppercase">Premium Member</p>
+                <p class="text-xs text-slate-500 flex items-center gap-1 mt-0.5">
+                  <span class="material-symbols-outlined text-[14px]">schedule</span>Joined Oct 2023
+                </p>
+              </div>
+            </div>
+            <div class="flex gap-1">
+              <button class="p-2 text-slate-400 hover:text-primary transition-colors"><span class="material-symbols-outlined text-[20px]">edit</span></button>
+              <button class="p-2 text-slate-400 hover:text-primary transition-colors"><span class="material-symbols-outlined text-[20px]">delete</span></button>
+            </div>
+          </div>
+
+          <!-- Robert Fox -->
+          <div class="bg-white dark:bg-slate-900 p-4 rounded-xl shadow-sm border border-primary/5 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+              <div class="h-12 w-12 rounded-lg bg-primary/10 flex items-center justify-center overflow-hidden border border-primary/5">
+                <img class="h-full w-full object-cover" alt="Portrait of Robert Fox, science head"
+                  src="https://lh3.googleusercontent.com/aida-public/AB6AXuBNg3pTPtrc0eRTD8MGzAWjvMAUicxCQCeGaOlwUUk8IEG4rxUz2L9A9_MdKbgPee1Va9zk0XpallIpmZwXavAyXCkYYoEPnrj3nCHCpyQb2aExIh8PPvGSKeQOQi__XMjxpYztCFfzIqK-JCu7o6c2mtMWyV7AD_0cLey_aFYN5zWqK57CzGJe9VwjzUveKWOSNDfcw-ftovjwwA8VqfYm7pIhIHb5mlFfIO08EcUs0exBNFqPCKEMFPGWWKesvs5Gp5VIiQVfgg"/>
+              </div>
+              <div>
+                <h3 class="font-bold text-slate-900 dark:text-slate-100">Robert Fox</h3>
+                <p class="text-xs font-medium text-primary uppercase">Head of Science</p>
+                <p class="text-xs text-slate-500 flex items-center gap-1 mt-0.5">
+                  <span class="material-symbols-outlined text-[14px]">mail</span>robert.f@edu.org
+                </p>
+              </div>
+            </div>
+            <div class="flex gap-1">
+              <button class="p-2 text-slate-400 hover:text-primary transition-colors"><span class="material-symbols-outlined text-[20px]">edit</span></button>
+              <button class="p-2 text-slate-400 hover:text-primary transition-colors"><span class="material-symbols-outlined text-[20px]">delete</span></button>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Organization Structure -->
+        <div class="mt-8">
+          <h2 class="text-lg font-bold mb-3">Organization Structure</h2>
+          <div class="bg-primary/5 rounded-xl p-4 border border-primary/10">
+            <div class="flex items-center gap-3 mb-3">
+              <div class="p-2 bg-primary/10 rounded-lg text-primary">
+                <span class="material-symbols-outlined">visibility</span>
+              </div>
+              <div>
+                <p class="text-sm font-bold">Public Directory</p>
+                <p class="text-xs text-slate-600 dark:text-slate-400">These contacts are visible to students and parents.</p>
+              </div>
+            </div>
+            <div class="grid grid-cols-3 gap-2">
+              <div class="text-center p-2 bg-white dark:bg-background-dark rounded-lg">
+                <p class="text-xl font-bold text-primary">12</p>
+                <p class="text-[10px] uppercase font-bold text-slate-500">Teachers</p>
+              </div>
+              <div class="text-center p-2 bg-white dark:bg-background-dark rounded-lg">
+                <p class="text-xl font-bold text-primary">8</p>
+                <p class="text-[10px] uppercase font-bold text-slate-500">Staff</p>
+              </div>
+              <div class="text-center p-2 bg-white dark:bg-background-dark rounded-lg">
+                <p class="text-xl font-bold text-primary">45</p>
+                <p class="text-[10px] uppercase font-bold text-slate-500">Volunteers</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </section>
+    </main>
+
+    <!-- Bottom Nav -->
+    <nav class="fixed bottom-0 left-0 right-0 bg-white dark:bg-background-dark border-t border-primary/10 px-6 py-3 flex justify-between items-center z-50">
+      <a class="flex flex-col items-center gap-1 text-slate-400" href="#">
+        <span class="material-symbols-outlined">home</span>
+        <span class="text-[10px] font-bold uppercase tracking-tighter">Home</span>
+      </a>
+      <a class="flex flex-col items-center gap-1 text-primary" href="#">
+        <span class="material-symbols-outlined font-fill">contact_page</span>
+        <span class="text-[10px] font-bold uppercase tracking-tighter">Directory</span>
+      </a>
+      <a class="flex flex-col items-center gap-1 text-slate-400" href="#">
+        <span class="material-symbols-outlined">bar_chart</span>
+        <span class="text-[10px] font-bold uppercase tracking-tighter">Analytics</span>
+      </a>
+      <a class="flex flex-col items-center gap-1 text-slate-400" href="#">
+        <span class="material-symbols-outlined">settings</span>
+        <span class="text-[10px] font-bold uppercase tracking-tighter">Settings</span>
+      </a>
+    </nav>
+
+  </div>
+</body>
+</html>
