@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/services/auth_service.dart';
 
 class SignupScreen extends StatefulWidget {
   const SignupScreen({super.key});
@@ -15,6 +16,7 @@ class _SignupScreenState extends State<SignupScreen> {
   final _emailController = TextEditingController();
   final _idController = TextEditingController();
   final _passwordController = TextEditingController();
+  final _authService = AuthService();
   bool _obscurePassword = true;
   bool _agreedToTerms = false;
   bool _isLoading = false;
@@ -39,12 +41,37 @@ class _SignupScreenState extends State<SignupScreen> {
 
     setState(() => _isLoading = true);
 
-    // TODO: Implement Firebase Auth signup
-    await Future.delayed(const Duration(seconds: 1));
+    try {
+      await _authService.signUp(
+        fullName: _nameController.text.trim(),
+        email: _emailController.text.trim(),
+        password: _passwordController.text,
+        idNumber: _idController.text.trim(),
+        orgCode: 'DEFAULT', // TODO: Add org code field or auto-detect
+      );
 
-    if (mounted) {
-      setState(() => _isLoading = false);
-      context.go('/home');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Account created successfully!'),
+            backgroundColor: AppColors.success,
+          ),
+        );
+        context.go('/home');
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(e.toString()),
+            backgroundColor: AppColors.error,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
     }
   }
 
@@ -69,10 +96,7 @@ class _SignupScreenState extends State<SignupScreen> {
                         child: const SizedBox(
                           width: 48,
                           height: 48,
-                          child: Icon(
-                            Icons.arrow_back,
-                            color: AppColors.textPrimary,
-                          ),
+                          child: Icon(Icons.arrow_back, color: AppColors.textPrimary),
                         ),
                       ),
                       Expanded(
@@ -94,7 +118,6 @@ class _SignupScreenState extends State<SignupScreen> {
                   padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
                   child: Column(
                     children: [
-                      // Icon
                       Container(
                         width: 64,
                         height: 64,
@@ -109,21 +132,16 @@ class _SignupScreenState extends State<SignupScreen> {
                             ),
                           ],
                         ),
-                        child: const Icon(
-                          Icons.school,
-                          size: 40,
-                          color: Colors.white,
-                        ),
+                        child: const Icon(Icons.school, size: 40, color: Colors.white),
                       ),
                       const SizedBox(height: 16),
-                      // Title
                       Text(
                         'Join QuickReach',
                         style: Theme.of(context).textTheme.headlineLarge,
                         textAlign: TextAlign.center,
                       ),
                       const SizedBox(height: 4),
-                      Text(
+                      const Text(
                         'CAMPUS EDITION',
                         style: TextStyle(
                           fontSize: 14,
@@ -138,7 +156,7 @@ class _SignupScreenState extends State<SignupScreen> {
 
                 const SizedBox(height: 24),
 
-                // Full Name Field
+                // Full Name
                 _buildInputField(
                   label: 'Full Name',
                   controller: _nameController,
@@ -146,14 +164,12 @@ class _SignupScreenState extends State<SignupScreen> {
                   prefixIcon: Icons.person,
                   keyboardType: TextInputType.name,
                   validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Please enter your name';
-                    }
+                    if (value == null || value.isEmpty) return 'Please enter your name';
                     return null;
                   },
                 ),
 
-                // University Email Field
+                // University Email
                 _buildInputField(
                   label: 'University Email',
                   controller: _emailController,
@@ -161,17 +177,13 @@ class _SignupScreenState extends State<SignupScreen> {
                   prefixIcon: Icons.mail,
                   keyboardType: TextInputType.emailAddress,
                   validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Please enter your email';
-                    }
-                    if (!value.contains('@')) {
-                      return 'Please enter a valid email';
-                    }
+                    if (value == null || value.isEmpty) return 'Please enter your email';
+                    if (!value.contains('@')) return 'Please enter a valid email';
                     return null;
                   },
                 ),
 
-                // Student / Staff ID Field
+                // Student / Staff ID
                 _buildInputField(
                   label: 'Student / Staff ID',
                   controller: _idController,
@@ -179,28 +191,22 @@ class _SignupScreenState extends State<SignupScreen> {
                   prefixIcon: Icons.badge,
                   keyboardType: TextInputType.text,
                   validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Please enter your ID number';
-                    }
+                    if (value == null || value.isEmpty) return 'Please enter your ID number';
                     return null;
                   },
                 ),
 
-                // Password Field
+                // Password
                 Padding(
                   padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Padding(
-                        padding: const EdgeInsets.only(left: 4, bottom: 8),
+                      const Padding(
+                        padding: EdgeInsets.only(left: 4, bottom: 8),
                         child: Text(
                           'Password',
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w600,
-                            color: AppColors.textPrimary,
-                          ),
+                          style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: AppColors.textPrimary),
                         ),
                       ),
                       TextFormField(
@@ -229,18 +235,12 @@ class _SignupScreenState extends State<SignupScreen> {
                               _obscurePassword ? Icons.visibility : Icons.visibility_off,
                               color: AppColors.textHint,
                             ),
-                            onPressed: () {
-                              setState(() => _obscurePassword = !_obscurePassword);
-                            },
+                            onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
                           ),
                         ),
                         validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return 'Please enter a password';
-                          }
-                          if (value.length < 6) {
-                            return 'Password must be at least 6 characters';
-                          }
+                          if (value == null || value.isEmpty) return 'Please enter a password';
+                          if (value.length < 6) return 'Password must be at least 6 characters';
                           return null;
                         },
                       ),
@@ -259,9 +259,7 @@ class _SignupScreenState extends State<SignupScreen> {
                         height: 20,
                         child: Checkbox(
                           value: _agreedToTerms,
-                          onChanged: (value) {
-                            setState(() => _agreedToTerms = value ?? false);
-                          },
+                          onChanged: (value) => setState(() => _agreedToTerms = value ?? false),
                         ),
                       ),
                       const SizedBox(width: 12),
@@ -269,25 +267,16 @@ class _SignupScreenState extends State<SignupScreen> {
                         child: Text.rich(
                           TextSpan(
                             text: 'By creating an account, you agree to the ',
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: AppColors.textSecondary,
-                            ),
+                            style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
                             children: [
                               TextSpan(
                                 text: 'Terms of Service',
-                                style: TextStyle(
-                                  color: AppColors.primary,
-                                  fontWeight: FontWeight.bold,
-                                ),
+                                style: const TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold),
                               ),
                               const TextSpan(text: ' and '),
                               TextSpan(
                                 text: 'Privacy Policy',
-                                style: TextStyle(
-                                  color: AppColors.primary,
-                                  fontWeight: FontWeight.bold,
-                                ),
+                                style: const TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold),
                               ),
                               const TextSpan(text: ' of QuickReach Campus.'),
                             ],
@@ -310,29 +299,17 @@ class _SignupScreenState extends State<SignupScreen> {
                         foregroundColor: Colors.white,
                         elevation: 8,
                         shadowColor: AppColors.primaryWithOpacity30,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                       ),
                       child: _isLoading
                           ? const SizedBox(
-                              height: 20,
-                              width: 20,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                color: Colors.white,
-                              ),
+                              height: 20, width: 20,
+                              child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
                             )
-                          : Row(
+                          : const Row(
                               mainAxisAlignment: MainAxisAlignment.center,
-                              children: const [
-                                Text(
-                                  'Create Account',
-                                  style: TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
+                              children: [
+                                Text('Create Account', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
                                 SizedBox(width: 8),
                                 Icon(Icons.arrow_forward, size: 18),
                               ],
@@ -347,23 +324,10 @@ class _SignupScreenState extends State<SignupScreen> {
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Text(
-                        'Already have an account? ',
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: AppColors.textSecondary,
-                        ),
-                      ),
+                      const Text('Already have an account? ', style: TextStyle(fontSize: 14, color: AppColors.textSecondary)),
                       GestureDetector(
                         onTap: () => context.go('/login'),
-                        child: Text(
-                          'Log in',
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.bold,
-                            color: AppColors.primary,
-                          ),
-                        ),
+                        child: const Text('Log in', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: AppColors.primary)),
                       ),
                     ],
                   ),
@@ -393,14 +357,7 @@ class _SignupScreenState extends State<SignupScreen> {
         children: [
           Padding(
             padding: const EdgeInsets.only(left: 4, bottom: 8),
-            child: Text(
-              label,
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
-                color: AppColors.textPrimary,
-              ),
-            ),
+            child: Text(label, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: AppColors.textPrimary)),
           ),
           TextFormField(
             controller: controller,

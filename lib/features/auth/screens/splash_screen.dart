@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/constants/app_constants.dart';
@@ -34,13 +35,21 @@ class _SplashScreenState extends State<SplashScreen>
 
     _controller.forward();
 
-    // Navigate after delay
-    Future.delayed(const Duration(seconds: 3), () {
+    // Check auth state after animation
+    Future.delayed(const Duration(seconds: 2), () {
       if (mounted) {
-        // TODO: Check auth state and navigate accordingly
-        context.go('/login');
+        _checkAuthState();
       }
     });
+  }
+
+  void _checkAuthState() {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user != null) {
+      context.go('/home');
+    } else {
+      context.go('/login');
+    }
   }
 
   @override

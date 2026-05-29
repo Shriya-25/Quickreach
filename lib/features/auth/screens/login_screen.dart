@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/services/auth_service.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -13,6 +14,7 @@ class _LoginScreenState extends State<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
+  final _authService = AuthService();
   bool _obscurePassword = true;
   bool _isLoading = false;
 
@@ -28,12 +30,56 @@ class _LoginScreenState extends State<LoginScreen> {
 
     setState(() => _isLoading = true);
 
-    // TODO: Implement Firebase Auth login
-    await Future.delayed(const Duration(seconds: 1));
+    try {
+      await _authService.signIn(
+        email: _emailController.text.trim(),
+        password: _passwordController.text,
+      );
 
-    if (mounted) {
-      setState(() => _isLoading = false);
-      context.go('/home');
+      if (mounted) {
+        context.go('/home');
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(e.toString()),
+            backgroundColor: AppColors.error,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
+  }
+
+  Future<void> _handleForgotPassword() async {
+    final email = _emailController.text.trim();
+    if (email.isEmpty || !email.contains('@')) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please enter your email first')),
+      );
+      return;
+    }
+
+    try {
+      await _authService.resetPassword(email);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Password reset email sent. Check your inbox.'),
+            backgroundColor: AppColors.success,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(e.toString())),
+        );
+      }
     }
   }
 
@@ -53,14 +99,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
                   child: Row(
                     children: [
-                      const SizedBox(
-                        width: 48,
-                        height: 48,
-                        child: Icon(
-                          Icons.arrow_back,
-                          color: AppColors.textPrimary,
-                        ),
-                      ),
+                      const SizedBox(width: 48, height: 48),
                       Expanded(
                         child: Padding(
                           padding: const EdgeInsets.only(right: 48),
@@ -80,11 +119,10 @@ class _LoginScreenState extends State<LoginScreen> {
                   padding: const EdgeInsets.fromLTRB(24, 32, 24, 16),
                   child: Column(
                     children: [
-                      // Icon
                       Container(
                         width: 72,
                         height: 72,
-                        decoration: BoxDecoration(
+                        decoration: const BoxDecoration(
                           color: AppColors.primaryWithOpacity10,
                           shape: BoxShape.circle,
                         ),
@@ -95,7 +133,6 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                       ),
                       const SizedBox(height: 24),
-                      // Title
                       Text(
                         'Welcome Back',
                         style: Theme.of(context).textTheme.headlineLarge,
@@ -118,10 +155,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     onPressed: () {
                       // TODO: Implement SSO
                     },
-                    icon: const Icon(
-                      Icons.account_balance,
-                      color: AppColors.primary,
-                    ),
+                    icon: const Icon(Icons.account_balance, color: AppColors.primary),
                     label: const Text('Sign in with University SSO'),
                     style: OutlinedButton.styleFrom(
                       foregroundColor: AppColors.textPrimary,
@@ -140,14 +174,9 @@ class _LoginScreenState extends State<LoginScreen> {
                   padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
                   child: Row(
                     children: [
-                      Expanded(
-                        child: Container(
-                          height: 1,
-                          color: AppColors.primaryWithOpacity10,
-                        ),
-                      ),
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                      Expanded(child: Container(height: 1, color: AppColors.primaryWithOpacity10)),
+                      const Padding(
+                        padding: EdgeInsets.symmetric(horizontal: 16),
                         child: Text(
                           'OR EMAIL',
                           style: TextStyle(
@@ -158,12 +187,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           ),
                         ),
                       ),
-                      Expanded(
-                        child: Container(
-                          height: 1,
-                          color: AppColors.primaryWithOpacity10,
-                        ),
-                      ),
+                      Expanded(child: Container(height: 1, color: AppColors.primaryWithOpacity10)),
                     ],
                   ),
                 ),
@@ -174,13 +198,9 @@ class _LoginScreenState extends State<LoginScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
+                      const Text(
                         'University Email',
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
-                          color: AppColors.textPrimary,
-                        ),
+                        style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: AppColors.textPrimary),
                       ),
                       const SizedBox(height: 8),
                       TextFormField(
@@ -205,12 +225,8 @@ class _LoginScreenState extends State<LoginScreen> {
                           contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
                         ),
                         validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return 'Please enter your email';
-                          }
-                          if (!value.contains('@')) {
-                            return 'Please enter a valid email';
-                          }
+                          if (value == null || value.isEmpty) return 'Please enter your email';
+                          if (!value.contains('@')) return 'Please enter a valid email';
                           return null;
                         },
                       ),
@@ -227,25 +243,15 @@ class _LoginScreenState extends State<LoginScreen> {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Text(
+                          const Text(
                             'Password',
-                            style: TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w600,
-                              color: AppColors.textPrimary,
-                            ),
+                            style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: AppColors.textPrimary),
                           ),
                           GestureDetector(
-                            onTap: () {
-                              // TODO: Forgot password
-                            },
-                            child: Text(
+                            onTap: _handleForgotPassword,
+                            child: const Text(
                               'Forgot password?',
-                              style: TextStyle(
-                                fontSize: 14,
-                                fontWeight: FontWeight.w500,
-                                color: AppColors.primary,
-                              ),
+                              style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500, color: AppColors.primary),
                             ),
                           ),
                         ],
@@ -276,18 +282,12 @@ class _LoginScreenState extends State<LoginScreen> {
                               _obscurePassword ? Icons.visibility : Icons.visibility_off,
                               color: AppColors.textHint,
                             ),
-                            onPressed: () {
-                              setState(() => _obscurePassword = !_obscurePassword);
-                            },
+                            onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
                           ),
                         ),
                         validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return 'Please enter your password';
-                          }
-                          if (value.length < 6) {
-                            return 'Password must be at least 6 characters';
-                          }
+                          if (value == null || value.isEmpty) return 'Please enter your password';
+                          if (value.length < 6) return 'Password must be at least 6 characters';
                           return null;
                         },
                       ),
@@ -307,26 +307,14 @@ class _LoginScreenState extends State<LoginScreen> {
                         foregroundColor: Colors.white,
                         elevation: 8,
                         shadowColor: AppColors.primaryWithOpacity20,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                       ),
                       child: _isLoading
                           ? const SizedBox(
-                              height: 20,
-                              width: 20,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                color: Colors.white,
-                              ),
+                              height: 20, width: 20,
+                              child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
                             )
-                          : const Text(
-                              'Login',
-                              style: TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
+                          : const Text('Login', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
                     ),
                   ),
                 ),
@@ -337,23 +325,10 @@ class _LoginScreenState extends State<LoginScreen> {
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Text(
-                        "Don't have an account? ",
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: AppColors.textSecondary,
-                        ),
-                      ),
+                      const Text("Don't have an account? ", style: TextStyle(fontSize: 14, color: AppColors.textSecondary)),
                       GestureDetector(
                         onTap: () => context.go('/signup'),
-                        child: Text(
-                          'Sign Up',
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.bold,
-                            color: AppColors.primary,
-                          ),
-                        ),
+                        child: const Text('Sign Up', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: AppColors.primary)),
                       ),
                     ],
                   ),
@@ -366,32 +341,24 @@ class _LoginScreenState extends State<LoginScreen> {
                     opacity: 0.5,
                     child: Column(
                       children: [
-                        Row(
+                        const Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                             Icon(Icons.lock, size: 12, color: AppColors.textPrimary),
-                            const SizedBox(width: 4),
+                            SizedBox(width: 4),
                             Text(
                               'END-TO-END ENCRYPTED',
-                              style: TextStyle(
-                                fontSize: 10,
-                                fontWeight: FontWeight.bold,
-                                letterSpacing: 1.5,
-                                color: AppColors.textPrimary,
-                              ),
+                              style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 1.5, color: AppColors.textPrimary),
                             ),
                           ],
                         ),
                         const SizedBox(height: 8),
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 48),
+                        const Padding(
+                          padding: EdgeInsets.symmetric(horizontal: 48),
                           child: Text(
                             'QuickReach Campus Edition is a secure platform for university staff and students.',
                             textAlign: TextAlign.center,
-                            style: TextStyle(
-                              fontSize: 10,
-                              color: AppColors.textMuted,
-                            ),
+                            style: TextStyle(fontSize: 10, color: AppColors.textMuted),
                           ),
                         ),
                       ],
