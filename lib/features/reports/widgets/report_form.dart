@@ -131,30 +131,6 @@ class _ReportFormState extends State<ReportForm> {
                 },
               ),
             ),
-            const SizedBox(height: 4),
-            GestureDetector(
-              onTap: () {
-                // TODO: Open map
-              },
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: const [
-                    Icon(Icons.map, size: 16, color: AppColors.primary),
-                    SizedBox(width: 8),
-                    Text(
-                      'Open Interactive Map',
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w500,
-                        color: AppColors.primary,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
             const SizedBox(height: 20),
 
             // Description
