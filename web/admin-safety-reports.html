@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+  <title>Admin Safety Reports</title>
+  <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght@100..700,0..1&display=swap" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+  <script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          colors: {
+            "primary": "#f20d0d",
+            "background-light": "#f8f5f5",
+            "background-dark": "#221010",
+          },
+          fontFamily: { "display": ["Public Sans"] },
+          borderRadius: {
+            "DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"
+          },
+        },
+      },
+    }
+  </script>
+  <style>
+    body { font-family: 'Public Sans', sans-serif; }
+    .no-scrollbar::-webkit-scrollbar { display: none; }
+    .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    body { min-height: max(884px, 100dvh); }
+  </style>
+</head>
+<body class="bg-background-light dark:bg-background-dark font-display text-slate-900 dark:text-slate-100">
+  <div class="relative flex min-h-screen w-full flex-col overflow-x-hidden">
+
+    <!-- Header -->
+    <header class="sticky top-0 z-20 bg-background-light dark:bg-background-dark border-b border-primary/10">
+      <div class="flex items-center p-4 justify-between">
+        <div class="text-primary flex size-10 shrink-0 items-center justify-center rounded-full bg-primary/10">
+          <span class="material-symbols-outlined">arrow_back</span>
+        </div>
+        <h1 class="text-slate-900 dark:text-slate-100 text-lg font-bold leading-tight tracking-tight flex-1 text-center">Safety Reports</h1>
+        <div class="flex w-10 items-center justify-end">
+          <button class="text-primary flex size-10 shrink-0 items-center justify-center rounded-full bg-primary/10">
+            <span class="material-symbols-outlined">notifications</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Search -->
+      <div class="px-4 pb-4">
+        <div class="flex w-full items-stretch rounded-xl h-12 bg-white dark:bg-slate-800 border border-primary/10 shadow-sm overflow-hidden">
+          <div class="text-primary/60 flex items-center justify-center pl-4">
+            <span class="material-symbols-outlined">search</span>
+          </div>
+          <input class="form-input w-full border-none bg-transparent focus:ring-0 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 text-base font-normal h-full"
+            placeholder="Search by ID or reporter..."/>
+        </div>
+      </div>
+
+      <!-- Filter Chips -->
+      <div class="flex gap-3 px-4 pb-4 overflow-x-auto no-scrollbar">
+        <button class="flex h-9 shrink-0 items-center justify-center gap-x-2 rounded-full bg-primary text-white px-4 shadow-sm">
+          <span class="text-sm font-semibold">All Reports</span>
+        </button>
+        <button class="flex h-9 shrink-0 items-center justify-center gap-x-2 rounded-full bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 px-4 border border-primary/10">
+          <span class="text-sm font-medium">Maintenance</span>
+          <span class="material-symbols-outlined text-sm">expand_more</span>
+        </button>
+        <button class="flex h-9 shrink-0 items-center justify-center gap-x-2 rounded-full bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 px-4 border border-primary/10">
+          <span class="text-sm font-medium">Safety Concern</span>
+          <span class="material-symbols-outlined text-sm">expand_more</span>
+        </button>
+        <button class="flex h-9 shrink-0 items-center justify-center gap-x-2 rounded-full bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 px-4 border border-primary/10">
+          <span class="text-sm font-medium">Lighting</span>
+          <span class="material-symbols-outlined text-sm">expand_more</span>
+        </button>
+      </div>
+
+      <!-- Status Tabs -->
+      <div class="flex border-b border-primary/10 px-4">
+        <a class="flex-1 flex flex-col items-center justify-center border-b-2 border-primary text-primary pb-3 pt-2" href="#">
+          <p class="text-xs font-bold uppercase tracking-wider">Pending</p>
+        </a>
+        <a class="flex-1 flex flex-col items-center justify-center border-b-2 border-transparent text-slate-500 pb-3 pt-2" href="#">
+          <p class="text-xs font-bold uppercase tracking-wider">In Progress</p>
+        </a>
+        <a class="flex-1 flex flex-col items-center justify-center border-b-2 border-transparent text-slate-500 pb-3 pt-2" href="#">
+          <p class="text-xs font-bold uppercase tracking-wider">Resolved</p>
+        </a>
+      </div>
+    </header>
+
+    <!-- Report List -->
+    <main class="flex-1 p-4 space-y-4 pb-24">
+
+      <!-- Report Card 1 — Emergency (expanded) -->
+      <div class="bg-white dark:bg-slate-800 rounded-xl border border-primary/20 shadow-md p-4 space-y-3">
+        <div class="flex justify-between items-start">
+          <div class="space-y-1">
+            <div class="flex items-center gap-2">
+              <span class="px-2 py-0.5 rounded bg-primary/10 text-primary text-[10px] font-bold uppercase tracking-tighter">Emergency</span>
+              <span class="text-slate-400 text-xs font-medium">#REP-1042</span>
+            </div>
+            <h3 class="font-bold text-lg text-slate-900 dark:text-slate-100">Broken Street Lighting</h3>
+          </div>
+          <div class="px-3 py-1 rounded-full bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 text-[10px] font-bold uppercase">Pending</div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-4 py-2 border-y border-primary/5">
+          <div>
+            <p class="text-[10px] uppercase text-slate-400 font-bold">Reporter</p>
+            <p class="text-sm font-semibold text-slate-700 dark:text-slate-300">Jane Cooper</p>
+          </div>
+          <div>
+            <p class="text-[10px] uppercase text-slate-400 font-bold">Location</p>
+            <p class="text-sm font-semibold text-slate-700 dark:text-slate-300">Oak St. Sector 4</p>
+          </div>
+        </div>
+
+        <div class="space-y-2">
+          <p class="text-[10px] uppercase text-slate-400 font-bold">Description</p>
+          <p class="text-sm text-slate-600 dark:text-slate-400 leading-relaxed">
+            Three consecutive street lamps are out near the park entrance. Area is completely dark and feels unsafe for pedestrians at night.
+          </p>
+        </div>
+
+        <!-- Internal History -->
+        <div class="bg-background-light dark:bg-background-dark/50 rounded-lg p-3 space-y-3">
+          <p class="text-[10px] uppercase text-slate-500 font-bold flex items-center gap-1">
+            <span class="material-symbols-outlined text-xs">history</span> Internal History
+          </p>
+          <div class="space-y-2">
+            <div class="flex gap-2">
+              <div class="w-1 bg-primary/30 rounded-full"></div>
+              <div>
+                <p class="text-xs font-bold text-slate-700 dark:text-slate-200">Admin Smith
+                  <span class="text-[10px] font-normal text-slate-400 ml-1">2h ago</span>
+                </p>
+                <p class="text-xs text-slate-600 dark:text-slate-400 italic">Dispatched maintenance team to evaluate sensor failure.</p>
+              </div>
+            </div>
+          </div>
+          <div class="flex gap-2">
+            <input class="flex-1 text-xs bg-white dark:bg-slate-800 border-primary/10 rounded-lg focus:ring-primary focus:border-primary"
+              placeholder="Add internal comment..." type="text"/>
+            <button class="bg-primary text-white p-2 rounded-lg flex items-center justify-center">
+              <span class="material-symbols-outlined text-sm">send</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="flex gap-2 pt-2">
+          <button class="flex-1 bg-primary text-white font-bold text-sm py-3 rounded-lg shadow-lg shadow-primary/20">Assign Officer</button>
+          <button class="flex-1 bg-white dark:bg-slate-700 border border-primary/20 text-slate-900 dark:text-white font-bold text-sm py-3 rounded-lg">View Map</button>
+        </div>
+      </div>
+
+      <!-- Report Card 2 — Maintenance -->
+      <div class="bg-white dark:bg-slate-800 rounded-xl border border-primary/10 shadow-sm p-4 space-y-3 opacity-80">
+        <div class="flex justify-between items-start">
+          <div class="space-y-1">
+            <div class="flex items-center gap-2">
+              <span class="px-2 py-0.5 rounded bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400 text-[10px] font-bold uppercase tracking-tighter">Maintenance</span>
+              <span class="text-slate-400 text-xs font-medium">#REP-1041</span>
+            </div>
+            <h3 class="font-bold text-base text-slate-900 dark:text-slate-100">Exposed Wiring</h3>
+          </div>
+          <div class="px-3 py-1 rounded-full bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 text-[10px] font-bold uppercase">Pending</div>
+        </div>
+        <div class="flex items-center justify-between text-xs text-slate-500">
+          <span class="flex items-center gap-1">
+            <span class="material-symbols-outlined text-xs">person</span> Robert Fox
+          </span>
+          <span class="flex items-center gap-1">
+            <span class="material-symbols-outlined text-xs">calendar_today</span> Oct 12, 10:45 AM
+          </span>
+        </div>
+      </div>
+
+      <!-- Report Card 3 — Safety Concern -->
+      <div class="bg-white dark:bg-slate-800 rounded-xl border border-primary/10 shadow-sm p-4 space-y-3 opacity-80">
+        <div class="flex justify-between items-start">
+          <div class="space-y-1">
+            <div class="flex items-center gap-2">
+              <span class="px-2 py-0.5 rounded bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400 text-[10px] font-bold uppercase tracking-tighter">Safety Concern</span>
+              <span class="text-slate-400 text-xs font-medium">#REP-1040</span>
+            </div>
+            <h3 class="font-bold text-base text-slate-900 dark:text-slate-100">Loose Manhole Cover</h3>
+          </div>
+          <div class="px-3 py-1 rounded-full bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 text-[10px] font-bold uppercase">Pending</div>
+        </div>
+        <div class="flex items-center justify-between text-xs text-slate-500">
+          <span class="flex items-center gap-1">
+            <span class="material-symbols-outlined text-xs">person</span> Cody Fisher
+          </span>
+          <span class="flex items-center gap-1">
+            <span class="material-symbols-outlined text-xs">calendar_today</span> Oct 12, 09:30 AM
+          </span>
+        </div>
+      </div>
+
+    </main>
+
+    <!-- Bottom Nav -->
+    <nav class="fixed bottom-0 left-0 right-0 z-30 bg-white dark:bg-slate-900 border-t border-primary/10 px-4 pb-6 pt-2 shadow-xl">
+      <div class="flex justify-around items-center">
+        <a class="flex flex-col items-center gap-1 text-primary" href="#">
+          <span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1">assignment</span>
+          <p class="text-[10px] font-bold">Reports</p>
+        </a>
+        <a class="flex flex-col items-center gap-1 text-slate-400 dark:text-slate-500" href="#">
+          <span class="material-symbols-outlined">map</span>
+          <p class="text-[10px] font-medium">Live Map</p>
+        </a>
+        <a class="flex flex-col items-center gap-1 text-slate-400 dark:text-slate-500" href="#">
+          <span class="material-symbols-outlined">group</span>
+          <p class="text-[10px] font-medium">Responders</p>
+        </a>
+        <a class="flex flex-col items-center gap-1 text-slate-400 dark:text-slate-500" href="#">
+          <span class="material-symbols-outlined">analytics</span>
+          <p class="text-[10px] font-medium">Stats</p>
+        </a>
+        <a class="flex flex-col items-center gap-1 text-slate-400 dark:text-slate-500" href="#">
+          <span class="material-symbols-outlined">settings</span>
+          <p class="text-[10px] font-medium">Admin</p>
+        </a>
+      </div>
+    </nav>
+
+  </div>
+</body>
+</html>
