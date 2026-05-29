@@ -10,60 +10,102 @@ class LoginScreen extends StatefulWidget {
   State<LoginScreen> createState() => _LoginScreenState();
 }
 
-class _LoginScreenState extends State<LoginScreen> {
-  final _formKey = GlobalKey<FormState>();
-  final _emailController = TextEditingController();
-  final _passwordController = TextEditingController();
+class _LoginScreenState extends State<LoginScreen>
+    with SingleTickerProviderStateMixin {
+  // ── Forms ──────────────────────────────────────────────────────────────────
+  final _studentFormKey = GlobalKey<FormState>();
+  final _adminFormKey = GlobalKey<FormState>();
+
+  // Student/Staff fields
+  final _collegeIdController = TextEditingController();
+  final _studentPasswordController = TextEditingController();
+  bool _rememberMe = false;
+
+  // Admin fields
+  final _adminEmailController = TextEditingController();
+  final _adminPasswordController = TextEditingController();
+
+  // Shared state
   final _authService = AuthService();
-  bool _obscurePassword = true;
+  bool _obscureStudentPassword = true;
+  bool _obscureAdminPassword = true;
   bool _isLoading = false;
+
+  // ── Tab animation ──────────────────────────────────────────────────────────
+  late TabController _tabController;
+  int _selectedTab = 0; // 0 = Student/Staff, 1 = Admin
+
+  @override
+  void initState() {
+    super.initState();
+    _tabController = TabController(length: 2, vsync: this);
+    _tabController.addListener(() {
+      if (_tabController.indexIsChanging) {
+        setState(() => _selectedTab = _tabController.index);
+      }
+    });
+  }
 
   @override
   void dispose() {
-    _emailController.dispose();
-    _passwordController.dispose();
+    _tabController.dispose();
+    _collegeIdController.dispose();
+    _studentPasswordController.dispose();
+    _adminEmailController.dispose();
+    _adminPasswordController.dispose();
     super.dispose();
   }
 
-  Future<void> _handleLogin() async {
-    if (!_formKey.currentState!.validate()) return;
-
+  // ── Actions ────────────────────────────────────────────────────────────────
+  Future<void> _handleStudentLogin() async {
+    if (!_studentFormKey.currentState!.validate()) return;
     setState(() => _isLoading = true);
-
     try {
+      // College ID login: treat as email (org may suffix domain) or direct email
       await _authService.signIn(
-        email: _emailController.text.trim(),
-        password: _passwordController.text,
+        email: _collegeIdController.text.trim(),
+        password: _studentPasswordController.text,
       );
-
-      if (mounted) {
-        context.go('/home');
-      }
+      if (mounted) context.go('/home');
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(e.toString()),
-            backgroundColor: AppColors.error,
-          ),
+          SnackBar(content: Text(e.toString()), backgroundColor: AppColors.error),
         );
       }
     } finally {
-      if (mounted) {
-        setState(() => _isLoading = false);
-      }
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
-  Future<void> _handleForgotPassword() async {
-    final email = _emailController.text.trim();
-    if (email.isEmpty || !email.contains('@')) {
+  Future<void> _handleAdminLogin() async {
+    if (!_adminFormKey.currentState!.validate()) return;
+    setState(() => _isLoading = true);
+    try {
+      await _authService.signIn(
+        email: _adminEmailController.text.trim(),
+        password: _adminPasswordController.text,
+      );
+      if (mounted) context.go('/home');
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(e.toString()), backgroundColor: AppColors.error),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  Future<void> _handleForgotPassword(TextEditingController emailCtrl) async {
+    final email = emailCtrl.text.trim();
+    if (email.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please enter your email first')),
+        const SnackBar(content: Text('Please enter your email / College ID first')),
       );
       return;
     }
-
     try {
       await _authService.resetPassword(email);
       if (mounted) {
@@ -83,293 +125,516 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 
+  // ── Build ──────────────────────────────────────────────────────────────────
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.backgroundLight,
       body: SafeArea(
         child: SingleChildScrollView(
-          child: Form(
-            key: _formKey,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                // Top Navigation
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-                  child: Row(
-                    children: [
-                      const SizedBox(width: 48, height: 48),
-                      Expanded(
-                        child: Padding(
-                          padding: const EdgeInsets.only(right: 48),
-                          child: Text(
-                            'QuickReach Campus',
-                            textAlign: TextAlign.center,
-                            style: Theme.of(context).textTheme.titleLarge,
-                          ),
-                        ),
-                      ),
-                    ],
+          padding: const EdgeInsets.symmetric(horizontal: 24),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              const SizedBox(height: 40),
+
+              // ── Header ────────────────────────────────────────────────────
+              _buildHeader(),
+
+              const SizedBox(height: 36),
+
+              // ── Role Toggle ───────────────────────────────────────────────
+              _buildRoleToggle(),
+
+              const SizedBox(height: 32),
+
+              // ── Form (animated switch) ────────────────────────────────────
+              AnimatedSwitcher(
+                duration: const Duration(milliseconds: 300),
+                transitionBuilder: (child, animation) => FadeTransition(
+                  opacity: animation,
+                  child: SlideTransition(
+                    position: Tween<Offset>(
+                      begin: const Offset(0.05, 0),
+                      end: Offset.zero,
+                    ).animate(animation),
+                    child: child,
                   ),
                 ),
+                child: _selectedTab == 0
+                    ? _buildStudentForm(key: const ValueKey('student'))
+                    : _buildAdminForm(key: const ValueKey('admin')),
+              ),
 
-                // Header Section
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(24, 32, 24, 16),
-                  child: Column(
-                    children: [
-                      Container(
-                        width: 72,
-                        height: 72,
-                        decoration: const BoxDecoration(
-                          color: AppColors.primaryWithOpacity10,
-                          shape: BoxShape.circle,
-                        ),
-                        child: const Icon(
-                          Icons.school,
-                          size: 48,
-                          color: AppColors.primary,
-                        ),
-                      ),
-                      const SizedBox(height: 24),
-                      Text(
-                        'Welcome Back',
-                        style: Theme.of(context).textTheme.headlineLarge,
-                        textAlign: TextAlign.center,
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        'Access your university resources securely',
-                        style: Theme.of(context).textTheme.bodyLarge,
-                        textAlign: TextAlign.center,
-                      ),
-                    ],
+              const SizedBox(height: 32),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  // ── Header ─────────────────────────────────────────────────────────────────
+  Widget _buildHeader() {
+    return Column(
+      children: [
+        // Logo
+        Container(
+          width: 72,
+          height: 72,
+          decoration: BoxDecoration(
+            color: AppColors.primary,
+            borderRadius: BorderRadius.circular(20),
+            boxShadow: [
+              BoxShadow(
+                color: AppColors.primaryWithOpacity30,
+                blurRadius: 20,
+                offset: const Offset(0, 8),
+              ),
+            ],
+          ),
+          child: const Icon(Icons.shield_rounded, color: Colors.white, size: 38),
+        ),
+        const SizedBox(height: 20),
+        const Text(
+          'QuickReach',
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            fontSize: 28,
+            fontWeight: FontWeight.bold,
+            color: AppColors.textPrimary,
+            letterSpacing: -0.5,
+          ),
+        ),
+        const SizedBox(height: 6),
+        const Text(
+          'Campus Safety & Emergency Communication',
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            fontSize: 13,
+            fontWeight: FontWeight.w600,
+            color: AppColors.primary,
+            letterSpacing: 0.1,
+          ),
+        ),
+        const SizedBox(height: 8),
+        const Text(
+          'Stay connected, informed, and prepared\nduring emergencies.',
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            fontSize: 13,
+            color: AppColors.textSecondary,
+            height: 1.5,
+          ),
+        ),
+      ],
+    );
+  }
+
+  // ── Role Toggle ────────────────────────────────────────────────────────────
+  Widget _buildRoleToggle() {
+    return Container(
+      height: 48,
+      padding: const EdgeInsets.all(4),
+      decoration: BoxDecoration(
+        color: const Color(0xFFE8ECEF),
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: Row(
+        children: [
+          _buildToggleTab('Student / Staff', 0),
+          _buildToggleTab('Admin', 1),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildToggleTab(String label, int index) {
+    final isSelected = _selectedTab == index;
+    return Expanded(
+      child: GestureDetector(
+        onTap: () {
+          setState(() => _selectedTab = index);
+          _tabController.animateTo(index);
+        },
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 220),
+          curve: Curves.easeInOut,
+          height: double.infinity,
+          decoration: BoxDecoration(
+            color: isSelected ? Colors.white : Colors.transparent,
+            borderRadius: BorderRadius.circular(10),
+            boxShadow: isSelected
+                ? [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.08),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    ),
+                  ]
+                : [],
+          ),
+          alignment: Alignment.center,
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                index == 0 ? Icons.school_rounded : Icons.admin_panel_settings_rounded,
+                size: 16,
+                color: isSelected ? AppColors.primary : AppColors.textHint,
+              ),
+              const SizedBox(width: 6),
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w700,
+                  color: isSelected ? AppColors.primary : AppColors.textSecondary,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  // ── Student / Staff Form ───────────────────────────────────────────────────
+  Widget _buildStudentForm({Key? key}) {
+    return Form(
+      key: _studentFormKey,
+      child: Column(
+        key: key,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // College ID
+          _fieldLabel('College ID'),
+          const SizedBox(height: 8),
+          TextFormField(
+            controller: _collegeIdController,
+            keyboardType: TextInputType.text,
+            textInputAction: TextInputAction.next,
+            decoration: _inputDeco(
+              hint: 'Enter your College ID',
+              icon: Icons.badge_outlined,
+            ),
+            validator: (v) {
+              if (v == null || v.isEmpty) return 'Please enter your College ID';
+              return null;
+            },
+          ),
+
+          const SizedBox(height: 20),
+
+          // Password row with Forgot
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              _fieldLabel('Password'),
+              GestureDetector(
+                onTap: () => _handleForgotPassword(_collegeIdController),
+                child: const Text(
+                  'Forgot Password?',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.primary,
                   ),
                 ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          TextFormField(
+            controller: _studentPasswordController,
+            obscureText: _obscureStudentPassword,
+            textInputAction: TextInputAction.done,
+            onFieldSubmitted: (_) => _handleStudentLogin(),
+            decoration: _inputDeco(
+              hint: '••••••••',
+              icon: Icons.lock_outline_rounded,
+              suffix: _eyeButton(
+                obscure: _obscureStudentPassword,
+                onTap: () => setState(() => _obscureStudentPassword = !_obscureStudentPassword),
+              ),
+            ),
+            validator: (v) {
+              if (v == null || v.isEmpty) return 'Please enter your password';
+              if (v.length < 6) return 'Password must be at least 6 characters';
+              return null;
+            },
+          ),
 
-                // SSO Button
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-                  child: OutlinedButton.icon(
-                    onPressed: () {
-                      // TODO: Implement SSO
-                    },
-                    icon: const Icon(Icons.account_balance, color: AppColors.primary),
-                    label: const Text('Sign in with University SSO'),
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: AppColors.textPrimary,
-                      backgroundColor: AppColors.surface,
-                      side: const BorderSide(color: AppColors.primaryWithOpacity20),
-                      minimumSize: const Size(double.infinity, 56),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
+          const SizedBox(height: 16),
+
+          // Remember Me
+          Row(
+            children: [
+              SizedBox(
+                width: 20,
+                height: 20,
+                child: Checkbox(
+                  value: _rememberMe,
+                  activeColor: AppColors.primary,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
+                  side: const BorderSide(color: AppColors.border),
+                  onChanged: (v) => setState(() => _rememberMe = v ?? false),
+                ),
+              ),
+              const SizedBox(width: 10),
+              const Text(
+                'Remember Me',
+                style: TextStyle(fontSize: 13, color: AppColors.textSecondary),
+              ),
+            ],
+          ),
+
+          const SizedBox(height: 28),
+
+          // Login Button
+          _primaryButton(
+            label: 'Login',
+            onTap: _isLoading ? null : _handleStudentLogin,
+            isLoading: _isLoading,
+          ),
+
+          const SizedBox(height: 16),
+
+          // Create Account
+          Center(
+            child: GestureDetector(
+              onTap: () => context.go('/signup'),
+              child: RichText(
+                text: const TextSpan(
+                  text: "Don't have an account? ",
+                  style: TextStyle(fontSize: 14, color: AppColors.textSecondary),
+                  children: [
+                    TextSpan(
+                      text: 'Create Account',
+                      style: TextStyle(
+                        color: AppColors.primary,
+                        fontWeight: FontWeight.bold,
                       ),
                     ),
-                  ),
+                  ],
                 ),
+              ),
+            ),
+          ),
 
-                // Divider
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-                  child: Row(
-                    children: [
-                      Expanded(child: Container(height: 1, color: AppColors.primaryWithOpacity10)),
-                      const Padding(
-                        padding: EdgeInsets.symmetric(horizontal: 16),
-                        child: Text(
-                          'OR EMAIL',
-                          style: TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w500,
-                            color: AppColors.textHint,
-                            letterSpacing: 1.5,
-                          ),
-                        ),
-                      ),
-                      Expanded(child: Container(height: 1, color: AppColors.primaryWithOpacity10)),
-                    ],
-                  ),
-                ),
+          const SizedBox(height: 16),
 
-                // Email Field
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'University Email',
-                        style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: AppColors.textPrimary),
-                      ),
-                      const SizedBox(height: 8),
-                      TextFormField(
-                        controller: _emailController,
-                        keyboardType: TextInputType.emailAddress,
-                        decoration: InputDecoration(
-                          hintText: 'name@university.edu',
-                          filled: true,
-                          fillColor: AppColors.surface,
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                            borderSide: const BorderSide(color: AppColors.primaryWithOpacity20),
-                          ),
-                          enabledBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                            borderSide: const BorderSide(color: AppColors.primaryWithOpacity20),
-                          ),
-                          focusedBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                            borderSide: const BorderSide(color: AppColors.primary, width: 2),
-                          ),
-                          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
-                        ),
-                        validator: (value) {
-                          if (value == null || value.isEmpty) return 'Please enter your email';
-                          if (!value.contains('@')) return 'Please enter a valid email';
-                          return null;
-                        },
-                      ),
-                    ],
-                  ),
-                ),
-
-                // Password Field
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          const Text(
-                            'Password',
-                            style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: AppColors.textPrimary),
-                          ),
-                          GestureDetector(
-                            onTap: _handleForgotPassword,
-                            child: const Text(
-                              'Forgot password?',
-                              style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500, color: AppColors.primary),
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 8),
-                      TextFormField(
-                        controller: _passwordController,
-                        obscureText: _obscurePassword,
-                        decoration: InputDecoration(
-                          hintText: 'Enter your password',
-                          filled: true,
-                          fillColor: AppColors.surface,
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                            borderSide: const BorderSide(color: AppColors.primaryWithOpacity20),
-                          ),
-                          enabledBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                            borderSide: const BorderSide(color: AppColors.primaryWithOpacity20),
-                          ),
-                          focusedBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                            borderSide: const BorderSide(color: AppColors.primary, width: 2),
-                          ),
-                          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
-                          suffixIcon: IconButton(
-                            icon: Icon(
-                              _obscurePassword ? Icons.visibility : Icons.visibility_off,
-                              color: AppColors.textHint,
-                            ),
-                            onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
-                          ),
-                        ),
-                        validator: (value) {
-                          if (value == null || value.isEmpty) return 'Please enter your password';
-                          if (value.length < 6) return 'Password must be at least 6 characters';
-                          return null;
-                        },
-                      ),
-                    ],
-                  ),
-                ),
-
-                // Login Button
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(24, 24, 24, 0),
-                  child: SizedBox(
-                    height: 56,
-                    child: ElevatedButton(
-                      onPressed: _isLoading ? null : _handleLogin,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.primary,
-                        foregroundColor: Colors.white,
-                        elevation: 8,
-                        shadowColor: AppColors.primaryWithOpacity20,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                      ),
-                      child: _isLoading
-                          ? const SizedBox(
-                              height: 20, width: 20,
-                              child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
-                            )
-                          : const Text('Login', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                    ),
-                  ),
-                ),
-
-                // Sign Up Link
-                Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 20),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Text("Don't have an account? ", style: TextStyle(fontSize: 14, color: AppColors.textSecondary)),
-                      GestureDetector(
-                        onTap: () => context.go('/signup'),
-                        child: const Text('Sign Up', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: AppColors.primary)),
-                      ),
-                    ],
-                  ),
-                ),
-
-                // Security Footer
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 32, top: 16),
-                  child: Opacity(
-                    opacity: 0.5,
-                    child: Column(
-                      children: [
-                        const Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(Icons.lock, size: 12, color: AppColors.textPrimary),
-                            SizedBox(width: 4),
-                            Text(
-                              'END-TO-END ENCRYPTED',
-                              style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 1.5, color: AppColors.textPrimary),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 8),
-                        const Padding(
-                          padding: EdgeInsets.symmetric(horizontal: 48),
-                          child: Text(
-                            'QuickReach Campus Edition is a secure platform for university staff and students.',
-                            textAlign: TextAlign.center,
-                            style: TextStyle(fontSize: 10, color: AppColors.textMuted),
-                          ),
-                        ),
-                      ],
+          // Approval info
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            decoration: BoxDecoration(
+              color: AppColors.primaryWithOpacity10,
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: AppColors.primaryWithOpacity20),
+            ),
+            child: Row(
+              children: const [
+                Icon(Icons.info_outline_rounded, size: 16, color: AppColors.primary),
+                SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    'Access is granted after administrator approval.',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: AppColors.primary,
+                      fontWeight: FontWeight.w500,
                     ),
                   ),
                 ),
               ],
             ),
           ),
-        ),
+        ],
       ),
+    );
+  }
+
+  // ── Admin Form ─────────────────────────────────────────────────────────────
+  Widget _buildAdminForm({Key? key}) {
+    return Form(
+      key: _adminFormKey,
+      child: Column(
+        key: key,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // Admin Email
+          _fieldLabel('Admin Email'),
+          const SizedBox(height: 8),
+          TextFormField(
+            controller: _adminEmailController,
+            keyboardType: TextInputType.emailAddress,
+            textInputAction: TextInputAction.next,
+            decoration: _inputDeco(
+              hint: 'admin@institution.edu',
+              icon: Icons.alternate_email_rounded,
+            ),
+            validator: (v) {
+              if (v == null || v.isEmpty) return 'Please enter your email';
+              if (!v.contains('@')) return 'Please enter a valid email';
+              return null;
+            },
+          ),
+
+          const SizedBox(height: 20),
+
+          // Password row with Forgot
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              _fieldLabel('Password'),
+              GestureDetector(
+                onTap: () => _handleForgotPassword(_adminEmailController),
+                child: const Text(
+                  'Forgot Password?',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.primary,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          TextFormField(
+            controller: _adminPasswordController,
+            obscureText: _obscureAdminPassword,
+            textInputAction: TextInputAction.done,
+            onFieldSubmitted: (_) => _handleAdminLogin(),
+            decoration: _inputDeco(
+              hint: '••••••••',
+              icon: Icons.lock_outline_rounded,
+              suffix: _eyeButton(
+                obscure: _obscureAdminPassword,
+                onTap: () => setState(() => _obscureAdminPassword = !_obscureAdminPassword),
+              ),
+            ),
+            validator: (v) {
+              if (v == null || v.isEmpty) return 'Please enter your password';
+              if (v.length < 6) return 'Password must be at least 6 characters';
+              return null;
+            },
+          ),
+
+          const SizedBox(height: 28),
+
+          // Login Button
+          _primaryButton(
+            label: 'Login',
+            onTap: _isLoading ? null : _handleAdminLogin,
+            isLoading: _isLoading,
+          ),
+
+          const SizedBox(height: 20),
+
+          // Admin note — no Create Account
+          Center(
+            child: Text(
+              'Admin accounts are created by the organization.',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 12,
+                color: AppColors.textHint,
+                fontStyle: FontStyle.italic,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ── Shared helpers ─────────────────────────────────────────────────────────
+  Widget _fieldLabel(String text) {
+    return Text(
+      text,
+      style: const TextStyle(
+        fontSize: 13,
+        fontWeight: FontWeight.w700,
+        color: AppColors.textPrimary,
+      ),
+    );
+  }
+
+  Widget _eyeButton({required bool obscure, required VoidCallback onTap}) {
+    return IconButton(
+      icon: Icon(
+        obscure ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+        color: AppColors.textHint,
+        size: 20,
+      ),
+      onPressed: onTap,
+    );
+  }
+
+  Widget _primaryButton({
+    required String label,
+    required VoidCallback? onTap,
+    bool isLoading = false,
+  }) {
+    return SizedBox(
+      height: 54,
+      child: ElevatedButton(
+        onPressed: onTap,
+        style: ElevatedButton.styleFrom(
+          backgroundColor: AppColors.primary,
+          foregroundColor: Colors.white,
+          elevation: 6,
+          shadowColor: AppColors.primaryWithOpacity30,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        ),
+        child: isLoading
+            ? const SizedBox(
+                height: 22,
+                width: 22,
+                child: CircularProgressIndicator(strokeWidth: 2.5, color: Colors.white),
+              )
+            : Text(
+                label,
+                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              ),
+      ),
+    );
+  }
+
+  InputDecoration _inputDeco({
+    required String hint,
+    required IconData icon,
+    Widget? suffix,
+  }) {
+    return InputDecoration(
+      hintText: hint,
+      hintStyle: const TextStyle(color: AppColors.textHint, fontSize: 14),
+      filled: true,
+      fillColor: AppColors.surface,
+      prefixIcon: Icon(icon, color: AppColors.textHint, size: 20),
+      suffixIcon: suffix,
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: const BorderSide(color: AppColors.primary, width: 2),
+      ),
+      errorBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: const BorderSide(color: AppColors.error),
+      ),
+      focusedErrorBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: const BorderSide(color: AppColors.error, width: 2),
+      ),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
     );
   }
 }
