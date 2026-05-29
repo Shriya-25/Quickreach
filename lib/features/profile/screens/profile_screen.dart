@@ -136,13 +136,6 @@ class ProfileScreen extends StatelessWidget {
                         iconBgColor: AppColors.primaryWithOpacity10,
                         title: 'My Reports',
                         subtitle: '4 active, 12 resolved reports',
-                      ),
-                      ProfileSectionItem(
-                        icon: Icons.map,
-                        iconColor: AppColors.primary,
-                        iconBgColor: AppColors.primaryWithOpacity10,
-                        title: 'Safe Locations',
-                        subtitle: '3 pinned safe zones',
                         showDivider: false,
                       ),
                     ],

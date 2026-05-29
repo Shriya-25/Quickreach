@@ -77,15 +77,11 @@ class FirestoreService {
     required String userId,
     required String userName,
     required String orgCode,
-    double? latitude,
-    double? longitude,
   }) async {
     await _firestore.collection(AppConstants.sosAlertsCollection).add({
       'userId': userId,
       'userName': userName,
       'orgCode': orgCode,
-      'latitude': latitude,
-      'longitude': longitude,
       'timestamp': FieldValue.serverTimestamp(),
       'isActive': true,
     });
