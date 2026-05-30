@@ -8,11 +8,13 @@ class AppConstants {
 
   // Firebase Collections
   static const String usersCollection = 'users';
+  static const String adminsCollection = 'admins';
   static const String reportsCollection = 'reports';
   static const String staffCollection = 'staff';
   static const String alertsCollection = 'alerts';
   static const String organizationsCollection = 'organizations';
   static const String sosAlertsCollection = 'sos_alerts';
+  static const String sosRequestsCollection = 'sos_requests';
 
   // ImageBB
   static const String imageBBBaseUrl = 'https://api.imgbb.com/1/upload';
@@ -42,7 +44,18 @@ class AppConstants {
   static const String visibilityPublic = 'public';
   static const String visibilityPrivate = 'private';
 
+  // Approval Status
+  static const String approvalPending = 'pending';
+  static const String approvalApproved = 'approved';
+  static const String approvalRejected = 'rejected';
+
   // User Roles
+  static const String roleStudent = 'Student';
+  static const String roleFaculty = 'Faculty';
+  static const String roleStaff = 'Staff';
+  static const String roleAdmin = 'admin';
+
+  // Legacy role constants (kept for compatibility)
   static const String roleSuperAdmin = 'super_admin';
   static const String roleOrgAdmin = 'org_admin';
   static const String roleSubAdmin = 'sub_admin';
