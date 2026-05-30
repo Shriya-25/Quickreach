@@ -8,7 +8,7 @@ class AppConstants {
 
   // Firebase Collections
   static const String usersCollection = 'users';
-  static const String adminsCollection = 'admins';
+  static const String adminsCollection = 'admin';
   static const String reportsCollection = 'reports';
   static const String staffCollection = 'staff';
   static const String alertsCollection = 'alerts';
