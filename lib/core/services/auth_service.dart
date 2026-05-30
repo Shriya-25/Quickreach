@@ -7,44 +7,42 @@ class AuthService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
-  // Get current user
+  // ── Current user ──────────────────────────────────────────────────────────
   User? get currentUser => _auth.currentUser;
-
-  // Auth state stream
   Stream<User?> get authStateChanges => _auth.authStateChanges();
 
-  // Sign Up
-  Future<UserModel?> signUp({
+  // ── Sign Up ───────────────────────────────────────────────────────────────
+  /// Creates a Firebase Auth account and writes the user document to Firestore.
+  /// approvalStatus is always set to "pending" on creation.
+  Future<UserModel> signUp({
     required String fullName,
     required String email,
     required String password,
-    required String idNumber,
-    required String orgCode,
+    required String collegeId,
+    required String role,
   }) async {
     try {
-      // Create auth user
-      final UserCredential credential = await _auth.createUserWithEmailAndPassword(
+      final UserCredential credential =
+          await _auth.createUserWithEmailAndPassword(
         email: email,
         password: password,
       );
 
-      if (credential.user == null) return null;
+      final uid = credential.user!.uid;
 
-      // Create user document in Firestore
       final userModel = UserModel(
-        uid: credential.user!.uid,
+        uid: uid,
         fullName: fullName,
         email: email,
-        idNumber: idNumber,
-        orgCode: orgCode,
-        role: AppConstants.roleUser,
-        isApproved: false,
+        collegeId: collegeId,
+        role: role,
+        approvalStatus: AppConstants.approvalPending,
         createdAt: DateTime.now(),
       );
 
       await _firestore
           .collection(AppConstants.usersCollection)
-          .doc(credential.user!.uid)
+          .doc(uid)
           .set(userModel.toMap());
 
       return userModel;
@@ -53,26 +51,40 @@ class AuthService {
     }
   }
 
-  // Sign In
-  Future<UserModel?> signIn({
+  // ── Sign In ───────────────────────────────────────────────────────────────
+  /// Signs in with Firebase Auth and returns the UserModel from Firestore.
+  /// Does NOT navigate — routing is handled by the router redirect guard.
+  Future<UserModel> signIn({
     required String email,
     required String password,
   }) async {
     try {
-      final UserCredential credential = await _auth.signInWithEmailAndPassword(
+      final UserCredential credential =
+          await _auth.signInWithEmailAndPassword(
         email: email,
         password: password,
       );
 
-      if (credential.user == null) return null;
+      final uid = credential.user!.uid;
 
-      // Fetch user data from Firestore
       final doc = await _firestore
           .collection(AppConstants.usersCollection)
-          .doc(credential.user!.uid)
+          .doc(uid)
           .get();
 
-      if (!doc.exists) return null;
+      if (!doc.exists || doc.data() == null) {
+        // Could be an admin — return a minimal model so the router can check
+        // the admins collection separately.
+        return UserModel(
+          uid: uid,
+          fullName: '',
+          email: email,
+          collegeId: '',
+          role: '',
+          approvalStatus: AppConstants.approvalApproved,
+          createdAt: DateTime.now(),
+        );
+      }
 
       return UserModel.fromMap(doc.data()!);
     } on FirebaseAuthException catch (e) {
@@ -80,28 +92,27 @@ class AuthService {
     }
   }
 
-  // Sign Out
+  // ── Sign Out ──────────────────────────────────────────────────────────────
   Future<void> signOut() async {
     await _auth.signOut();
   }
 
-  // Get user data
+  // ── Get user data ─────────────────────────────────────────────────────────
   Future<UserModel?> getUserData(String uid) async {
     final doc = await _firestore
         .collection(AppConstants.usersCollection)
         .doc(uid)
         .get();
-
-    if (!doc.exists) return null;
+    if (!doc.exists || doc.data() == null) return null;
     return UserModel.fromMap(doc.data()!);
   }
 
-  // Reset Password
+  // ── Reset Password ────────────────────────────────────────────────────────
   Future<void> resetPassword(String email) async {
     await _auth.sendPasswordResetEmail(email: email);
   }
 
-  // Handle Firebase Auth Exceptions
+  // ── Auth exception handler ────────────────────────────────────────────────
   String _handleAuthException(FirebaseAuthException e) {
     switch (e.code) {
       case 'weak-password':
@@ -114,6 +125,8 @@ class AuthService {
         return 'No account found with this email.';
       case 'wrong-password':
         return 'Incorrect password.';
+      case 'invalid-credential':
+        return 'Incorrect email or password.';
       case 'user-disabled':
         return 'This account has been disabled.';
       case 'too-many-requests':

@@ -1,4 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import '../../models/user_model.dart';
+import '../../models/admin_model.dart';
 import '../../models/report_model.dart';
 import '../../models/staff_model.dart';
 import '../../models/alert_model.dart';
@@ -7,9 +9,85 @@ import '../constants/app_constants.dart';
 class FirestoreService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
+  // ==================== ADMIN DETECTION ====================
+
+  /// Returns true if the given UID exists in the admins collection.
+  Future<bool> isAdmin(String uid) async {
+    try {
+      final doc = await _firestore
+          .collection(AppConstants.adminsCollection)
+          .doc(uid)
+          .get();
+      return doc.exists;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  /// Fetches the AdminModel for a given UID, or null if not an admin.
+  Future<AdminModel?> getAdmin(String uid) async {
+    try {
+      final doc = await _firestore
+          .collection(AppConstants.adminsCollection)
+          .doc(uid)
+          .get();
+      if (!doc.exists || doc.data() == null) return null;
+      return AdminModel.fromMap(doc.data()!);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  // ==================== USER APPROVAL ====================
+
+  /// Stream of all users with approvalStatus == "pending", ordered by createdAt.
+  Stream<List<UserModel>> getPendingUsers() {
+    return _firestore
+        .collection(AppConstants.usersCollection)
+        .where('approvalStatus', isEqualTo: AppConstants.approvalPending)
+        .orderBy('createdAt', descending: false)
+        .snapshots()
+        .map((snap) =>
+            snap.docs.map((d) => UserModel.fromMap(d.data())).toList());
+  }
+
+  /// Stream of all users with approvalStatus == "approved".
+  Stream<List<UserModel>> getApprovedUsers() {
+    return _firestore
+        .collection(AppConstants.usersCollection)
+        .where('approvalStatus', isEqualTo: AppConstants.approvalApproved)
+        .orderBy('createdAt', descending: false)
+        .snapshots()
+        .map((snap) =>
+            snap.docs.map((d) => UserModel.fromMap(d.data())).toList());
+  }
+
+  /// Updates the approvalStatus field of a user document.
+  Future<void> updateApprovalStatus(String uid, String status) async {
+    if (status != AppConstants.approvalPending &&
+        status != AppConstants.approvalApproved &&
+        status != AppConstants.approvalRejected) {
+      throw ArgumentError(
+          'Invalid approval status: $status. Must be pending, approved, or rejected.');
+    }
+    await _firestore
+        .collection(AppConstants.usersCollection)
+        .doc(uid)
+        .update({'approvalStatus': status});
+  }
+
+  /// Fetches a single user document by UID.
+  Future<UserModel?> getUserById(String uid) async {
+    final doc = await _firestore
+        .collection(AppConstants.usersCollection)
+        .doc(uid)
+        .get();
+    if (!doc.exists || doc.data() == null) return null;
+    return UserModel.fromMap(doc.data()!);
+  }
+
   // ==================== REPORTS ====================
 
-  // Submit a report
   Future<void> submitReport(ReportModel report) async {
     await _firestore
         .collection(AppConstants.reportsCollection)
@@ -17,73 +95,60 @@ class FirestoreService {
         .set(report.toMap());
   }
 
-  // Get reports for an organization
-  Stream<List<ReportModel>> getReports(String orgCode) {
+  Stream<List<ReportModel>> getPublicReports() {
     return _firestore
         .collection(AppConstants.reportsCollection)
         .where('visibility', isEqualTo: AppConstants.visibilityPublic)
         .where('status', isNotEqualTo: AppConstants.statusRejected)
         .orderBy('createdAt', descending: true)
         .snapshots()
-        .map((snapshot) => snapshot.docs
-            .map((doc) => ReportModel.fromMap(doc.data()))
-            .toList());
+        .map((snap) =>
+            snap.docs.map((d) => ReportModel.fromMap(d.data())).toList());
   }
 
-  // Get user's reports
   Stream<List<ReportModel>> getUserReports(String userId) {
     return _firestore
         .collection(AppConstants.reportsCollection)
         .where('userId', isEqualTo: userId)
         .orderBy('createdAt', descending: true)
         .snapshots()
-        .map((snapshot) => snapshot.docs
-            .map((doc) => ReportModel.fromMap(doc.data()))
-            .toList());
+        .map((snap) =>
+            snap.docs.map((d) => ReportModel.fromMap(d.data())).toList());
   }
 
   // ==================== STAFF ====================
 
-  // Get staff for an organization
-  Stream<List<StaffModel>> getStaff(String orgCode) {
+  Stream<List<StaffModel>> getStaff() {
     return _firestore
         .collection(AppConstants.staffCollection)
-        .where('orgCode', isEqualTo: orgCode)
         .snapshots()
-        .map((snapshot) => snapshot.docs
-            .map((doc) => StaffModel.fromMap(doc.data()))
-            .toList());
+        .map((snap) =>
+            snap.docs.map((d) => StaffModel.fromMap(d.data())).toList());
   }
 
   // ==================== ALERTS ====================
 
-  // Get active alerts for an organization
-  Stream<List<AlertModel>> getAlerts(String orgCode) {
+  Stream<List<AlertModel>> getActiveAlerts() {
     return _firestore
         .collection(AppConstants.alertsCollection)
-        .where('orgCode', isEqualTo: orgCode)
         .where('isActive', isEqualTo: true)
         .orderBy('timestamp', descending: true)
         .snapshots()
-        .map((snapshot) => snapshot.docs
-            .map((doc) => AlertModel.fromMap(doc.data()))
-            .toList());
+        .map((snap) =>
+            snap.docs.map((d) => AlertModel.fromMap(d.data())).toList());
   }
 
   // ==================== SOS ====================
 
-  // Send SOS alert
   Future<void> sendSosAlert({
     required String userId,
     required String userName,
-    required String orgCode,
   }) async {
-    await _firestore.collection(AppConstants.sosAlertsCollection).add({
+    await _firestore.collection(AppConstants.sosRequestsCollection).add({
       'userId': userId,
       'userName': userName,
-      'orgCode': orgCode,
-      'timestamp': FieldValue.serverTimestamp(),
-      'isActive': true,
+      'status': 'active',
+      'createdAt': FieldValue.serverTimestamp(),
     });
   }
 }
