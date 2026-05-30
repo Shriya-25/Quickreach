@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/services/firestore_service.dart';
-import '../../../core/utils/seed_staff.dart';
 import '../../../models/staff_model.dart';
 import '../widgets/staff_list_item.dart';
 import '../widgets/department_filter_chips.dart';
@@ -20,7 +19,6 @@ class _StaffScreenState extends State<StaffScreen> {
 
   String _searchQuery = '';
   String _selectedFilter = 'All';
-  bool _isSeeding = false;
 
   // Fixed filter order as specified
   static const List<String> _filters = [
@@ -74,32 +72,6 @@ class _StaffScreenState extends State<StaffScreen> {
     return list;
   }
 
-  Future<void> _seedData() async {
-    setState(() => _isSeeding = true);
-    try {
-      await seedStaff();
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Staff data seeded successfully!'),
-            backgroundColor: AppColors.success,
-          ),
-        );
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Seed failed: $e'),
-            backgroundColor: AppColors.error,
-          ),
-        );
-      }
-    } finally {
-      if (mounted) setState(() => _isSeeding = false);
-    }
-  }
-
   Future<void> _callStaff(String phone) async {
     final uri = Uri(scheme: 'tel', path: phone.replaceAll(' ', ''));
     if (await canLaunchUrl(uri)) {
@@ -135,35 +107,14 @@ class _StaffScreenState extends State<StaffScreen> {
                 children: [
                   Padding(
                     padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
-                    child: Row(
-                      children: [
-                        const Expanded(
-                          child: Text(
-                            'Staff Directory',
-                            style: TextStyle(
-                              fontSize: 20,
-                              fontWeight: FontWeight.bold,
-                              letterSpacing: -0.3,
-                              color: AppColors.textPrimary,
-                            ),
-                          ),
-                        ),
-                        // Seed button — tap to populate Firestore
-                        if (_isSeeding)
-                          const SizedBox(
-                            width: 20,
-                            height: 20,
-                            child: CircularProgressIndicator(
-                                strokeWidth: 2, color: AppColors.primary),
-                          )
-                        else
-                          IconButton(
-                            icon: const Icon(Icons.cloud_upload_outlined,
-                                color: AppColors.textHint),
-                            tooltip: 'Seed staff data',
-                            onPressed: _seedData,
-                          ),
-                      ],
+                    child: const Text(
+                      'Staff Directory',
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: -0.3,
+                        color: AppColors.textPrimary,
+                      ),
                     ),
                   ),
 
@@ -239,23 +190,17 @@ class _StaffScreenState extends State<StaffScreen> {
                 final all = snapshot.data ?? [];
 
                 if (all.isEmpty) {
-                  return Center(
+                  return const Center(
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        const Icon(Icons.people_outline_rounded,
+                        Icon(Icons.people_outline_rounded,
                             size: 56, color: AppColors.textHint),
-                        const SizedBox(height: 12),
-                        const Text(
-                          'No staff data yet.',
+                        SizedBox(height: 12),
+                        Text(
+                          'No staff data available.',
                           style: TextStyle(
                               color: AppColors.textSecondary, fontSize: 15),
-                        ),
-                        const SizedBox(height: 8),
-                        const Text(
-                          'Tap the upload icon above to seed data.',
-                          style: TextStyle(
-                              color: AppColors.textHint, fontSize: 13),
                         ),
                       ],
                     ),
