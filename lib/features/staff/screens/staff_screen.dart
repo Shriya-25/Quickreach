@@ -1,21 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/services/firestore_service.dart';
+import '../../../core/utils/seed_staff.dart';
+import '../../../models/staff_model.dart';
 import '../widgets/staff_list_item.dart';
 import '../widgets/department_filter_chips.dart';
-
-class StaffMember {
-  final String name;
-  final String department;
-  final String? imageUrl;
-  final bool isFavorite;
-
-  const StaffMember({
-    required this.name,
-    required this.department,
-    this.imageUrl,
-    this.isFavorite = false,
-  });
-}
 
 class StaffScreen extends StatefulWidget {
   const StaffScreen({super.key});
@@ -25,56 +15,103 @@ class StaffScreen extends StatefulWidget {
 }
 
 class _StaffScreenState extends State<StaffScreen> {
-  final TextEditingController _searchController = TextEditingController();
-  String _searchQuery = '';
-  String _selectedDepartment = 'All';
+  final _searchController = TextEditingController();
+  final _firestoreService = FirestoreService();
 
-  // TODO: Replace with real data from Firestore
-  final List<StaffMember> _staffMembers = const [
-    StaffMember(
-      name: 'Dr. Alice Smith',
-      department: 'Computer Science',
-      isFavorite: true,
-    ),
-    StaffMember(
-      name: 'Robert Johnson',
-      department: 'Student Affairs',
-    ),
-    StaffMember(
-      name: 'Prof. Elena Rodriguez',
-      department: 'Economics',
-    ),
-    StaffMember(
-      name: 'Marcus Chen',
-      department: 'IT Services',
-    ),
-    StaffMember(
-      name: 'Sarah Jenkins',
-      department: 'Library Services',
-    ),
+  String _searchQuery = '';
+  String _selectedFilter = 'All';
+  bool _isSeeding = false;
+
+  // Fixed filter order as specified
+  static const List<String> _filters = [
+    'All',
+    'Computer Science',
+    'Information Technology',
+    'ENTC',
+    'Instrumentation',
+    'Electrical',
+    'Staff',
   ];
 
-  List<String> get _departments {
-    final deps = _staffMembers.map((s) => s.department).toSet().toList();
-    return ['All', ...deps];
-  }
+  List<StaffModel> _applyFilters(List<StaffModel> all) {
+    var list = all.toList();
 
-  List<StaffMember> get _filteredStaff {
-    var filtered = _staffMembers.toList();
-
-    if (_selectedDepartment != 'All') {
-      filtered = filtered.where((s) => s.department == _selectedDepartment).toList();
+    // Department / role filter
+    if (_selectedFilter != 'All') {
+      if (_selectedFilter == 'Staff') {
+        // Show Staff + Security + Principal roles
+        list = list
+            .where((s) =>
+                s.role == 'Staff' ||
+                s.role == 'Security' ||
+                s.role == 'Principal')
+            .toList();
+      } else {
+        list = list.where((s) => s.department == _selectedFilter).toList();
+      }
     }
 
+    // Search
     if (_searchQuery.isNotEmpty) {
-      filtered = filtered
+      final q = _searchQuery.toLowerCase();
+      list = list
           .where((s) =>
-              s.name.toLowerCase().contains(_searchQuery.toLowerCase()) ||
-              s.department.toLowerCase().contains(_searchQuery.toLowerCase()))
+              s.name.toLowerCase().contains(q) ||
+              s.department.toLowerCase().contains(q) ||
+              s.role.toLowerCase().contains(q))
           .toList();
     }
 
-    return filtered;
+    // Sort: Principal → HOD → Faculty → Staff → Security
+    const order = ['Principal', 'HOD', 'Faculty', 'Staff', 'Security'];
+    list.sort((a, b) {
+      final ai = order.indexOf(a.role);
+      final bi = order.indexOf(b.role);
+      if (ai != bi) return ai.compareTo(bi);
+      return a.name.compareTo(b.name);
+    });
+
+    return list;
+  }
+
+  Future<void> _seedData() async {
+    setState(() => _isSeeding = true);
+    try {
+      await seedStaff();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Staff data seeded successfully!'),
+            backgroundColor: AppColors.success,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Seed failed: $e'),
+            backgroundColor: AppColors.error,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isSeeding = false);
+    }
+  }
+
+  Future<void> _callStaff(String phone) async {
+    final uri = Uri(scheme: 'tel', path: phone.replaceAll(' ', ''));
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri);
+    }
+  }
+
+  Future<void> _emailStaff(String email) async {
+    final uri = Uri(scheme: 'mailto', path: email);
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri);
+    }
   }
 
   @override
@@ -89,133 +126,180 @@ class _StaffScreenState extends State<StaffScreen> {
       backgroundColor: AppColors.backgroundLight,
       body: Column(
         children: [
-          // Header
+          // ── Header ───────────────────────────────────────────────────────
           Container(
-            decoration: BoxDecoration(
-              color: AppColors.backgroundLight.withValues(alpha: 0.8),
-              border: Border(
-                bottom: BorderSide(color: AppColors.primaryWithOpacity10),
-              ),
-            ),
+            color: Colors.white,
             child: SafeArea(
               bottom: false,
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-                child: Row(
-                  children: [
-                    GestureDetector(
-                      onTap: () {},
-                      child: Container(
-                        width: 40,
-                        height: 40,
-                        decoration: const BoxDecoration(
-                          shape: BoxShape.circle,
+              child: Column(
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+                    child: Row(
+                      children: [
+                        const Expanded(
+                          child: Text(
+                            'Staff Directory',
+                            style: TextStyle(
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                              letterSpacing: -0.3,
+                              color: AppColors.textPrimary,
+                            ),
+                          ),
                         ),
-                        child: const Icon(
-                          Icons.arrow_back,
-                          color: AppColors.primary,
+                        // Seed button — tap to populate Firestore
+                        if (_isSeeding)
+                          const SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(
+                                strokeWidth: 2, color: AppColors.primary),
+                          )
+                        else
+                          IconButton(
+                            icon: const Icon(Icons.cloud_upload_outlined,
+                                color: AppColors.textHint),
+                            tooltip: 'Seed staff data',
+                            onPressed: _seedData,
+                          ),
+                      ],
+                    ),
+                  ),
+
+                  // Search bar
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+                    child: Container(
+                      height: 46,
+                      decoration: BoxDecoration(
+                        color: AppColors.backgroundLight,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: AppColors.border),
+                      ),
+                      child: TextField(
+                        controller: _searchController,
+                        onChanged: (v) => setState(() => _searchQuery = v),
+                        decoration: InputDecoration(
+                          hintText: 'Search by name, department or role',
+                          hintStyle: const TextStyle(
+                              fontSize: 13, color: AppColors.textHint),
+                          prefixIcon: const Icon(Icons.search_rounded,
+                              color: AppColors.textHint, size: 20),
+                          suffixIcon: _searchQuery.isNotEmpty
+                              ? IconButton(
+                                  icon: const Icon(Icons.clear_rounded,
+                                      size: 18, color: AppColors.textHint),
+                                  onPressed: () {
+                                    _searchController.clear();
+                                    setState(() => _searchQuery = '');
+                                  },
+                                )
+                              : null,
+                          border: InputBorder.none,
+                          enabledBorder: InputBorder.none,
+                          focusedBorder: InputBorder.none,
+                          contentPadding:
+                              const EdgeInsets.symmetric(vertical: 12),
                         ),
                       ),
                     ),
-                    const SizedBox(width: 16),
-                    const Expanded(
-                      child: Text(
-                        'Staff Directory',
-                        style: TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                          letterSpacing: -0.3,
-                          color: AppColors.textPrimary,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
+                  ),
+
+                  // Filter chips
+                  DepartmentFilterChips(
+                    departments: _filters,
+                    selectedDepartment: _selectedFilter,
+                    onSelected: (f) => setState(() => _selectedFilter = f),
+                  ),
+                  const SizedBox(height: 8),
+                ],
               ),
             ),
           ),
 
-          // Content
+          // ── Staff List ───────────────────────────────────────────────────
           Expanded(
-            child: SingleChildScrollView(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Search Bar
-                  Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Container(
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(12),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.04),
-                            blurRadius: 4,
-                          ),
-                        ],
-                      ),
-                      child: TextField(
-                        controller: _searchController,
-                        onChanged: (value) {
-                          setState(() => _searchQuery = value);
-                        },
-                        decoration: InputDecoration(
-                          hintText: 'Search by name or department',
-                          hintStyle: TextStyle(
-                            fontSize: 14,
-                            color: Colors.grey.shade400,
-                          ),
-                          prefixIcon: Icon(
-                            Icons.search,
-                            color: Colors.grey.shade400,
-                          ),
-                          border: InputBorder.none,
-                          enabledBorder: InputBorder.none,
-                          focusedBorder: InputBorder.none,
-                          contentPadding: const EdgeInsets.symmetric(
-                            horizontal: 16,
-                            vertical: 14,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
+            child: StreamBuilder<List<StaffModel>>(
+              stream: _firestoreService.getStaff(),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(
+                    child: CircularProgressIndicator(color: AppColors.primary),
+                  );
+                }
 
-                  // Department Filter Chips
-                  DepartmentFilterChips(
-                    departments: _departments,
-                    selectedDepartment: _selectedDepartment,
-                    onSelected: (dept) {
-                      setState(() => _selectedDepartment = dept);
-                    },
-                  ),
+                if (snapshot.hasError) {
+                  return Center(
+                    child: Text('Error: ${snapshot.error}',
+                        style: const TextStyle(color: AppColors.error)),
+                  );
+                }
 
-                  const SizedBox(height: 8),
+                final all = snapshot.data ?? [];
 
-                  // Staff List
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                if (all.isEmpty) {
+                  return Center(
                     child: Column(
-                      children: _filteredStaff.map((staff) {
-                        return StaffListItem(
-                          name: staff.name,
-                          department: staff.department,
-                          isFavorite: staff.isFavorite,
-                          onFavoriteTap: () {
-                            // TODO: Toggle favorite
-                          },
-                          onContactTap: () {
-                            // TODO: Call or email
-                          },
-                        );
-                      }).toList(),
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Icon(Icons.people_outline_rounded,
+                            size: 56, color: AppColors.textHint),
+                        const SizedBox(height: 12),
+                        const Text(
+                          'No staff data yet.',
+                          style: TextStyle(
+                              color: AppColors.textSecondary, fontSize: 15),
+                        ),
+                        const SizedBox(height: 8),
+                        const Text(
+                          'Tap the upload icon above to seed data.',
+                          style: TextStyle(
+                              color: AppColors.textHint, fontSize: 13),
+                        ),
+                      ],
                     ),
-                  ),
+                  );
+                }
 
-                  const SizedBox(height: 24),
-                ],
-              ),
+                final filtered = _applyFilters(all);
+
+                if (filtered.isEmpty) {
+                  return Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Icon(Icons.search_off_rounded,
+                            size: 48, color: AppColors.textHint),
+                        const SizedBox(height: 12),
+                        Text(
+                          'No results for "$_searchQuery"',
+                          style: const TextStyle(color: AppColors.textSecondary),
+                        ),
+                      ],
+                    ),
+                  );
+                }
+
+                return ListView.builder(
+                  padding:
+                      const EdgeInsets.fromLTRB(16, 12, 16, 24),
+                  itemCount: filtered.length,
+                  itemBuilder: (context, index) {
+                    final staff = filtered[index];
+                    // Show email only for Faculty, HOD, Principal
+                    final showEmail = ['Faculty', 'HOD', 'Principal']
+                        .contains(staff.role);
+                    return StaffListItem(
+                      staff: staff,
+                      onCallTap: () => _callStaff(staff.phone),
+                      onEmailTap: (showEmail && staff.email != null)
+                          ? () => _emailStaff(staff.email!)
+                          : null,
+                    );
+                  },
+                );
+              },
             ),
           ),
         ],

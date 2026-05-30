@@ -1,82 +1,101 @@
 import 'package:flutter/material.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../models/staff_model.dart';
 
 class StaffListItem extends StatelessWidget {
-  final String name;
-  final String department;
-  final String? imageUrl;
-  final bool isFavorite;
-  final VoidCallback onFavoriteTap;
-  final VoidCallback onContactTap;
+  final StaffModel staff;
+  final VoidCallback onCallTap;
+  final VoidCallback? onEmailTap; // null = don't show email button
 
   const StaffListItem({
     super.key,
-    required this.name,
-    required this.department,
-    this.imageUrl,
-    this.isFavorite = false,
-    required this.onFavoriteTap,
-    required this.onContactTap,
+    required this.staff,
+    required this.onCallTap,
+    this.onEmailTap,
   });
+
+  // Role badge color
+  Color get _roleColor {
+    switch (staff.role) {
+      case 'Principal':
+        return const Color(0xFF7C3AED); // purple
+      case 'HOD':
+        return const Color(0xFF0369A1); // blue
+      case 'Faculty':
+        return AppColors.primary;
+      case 'Security':
+        return const Color(0xFF059669); // green
+      default:
+        return AppColors.textSecondary;
+    }
+  }
+
+  Color get _roleBgColor {
+    switch (staff.role) {
+      case 'Principal':
+        return const Color(0xFFF3E8FF);
+      case 'HOD':
+        return const Color(0xFFE0F2FE);
+      case 'Faculty':
+        return AppColors.primaryWithOpacity10;
+      case 'Security':
+        return const Color(0xFFD1FAE5);
+      default:
+        return const Color(0xFFF1F5F9);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
+    final showEmail = onEmailTap != null;
+
     return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.all(12),
+      margin: const EdgeInsets.only(bottom: 10),
+      padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey.shade100),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: AppColors.border),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.04),
-            blurRadius: 4,
+            color: Colors.black.withValues(alpha: 0.03),
+            blurRadius: 6,
             offset: const Offset(0, 2),
           ),
         ],
       ),
       child: Row(
         children: [
-          // Avatar
+          // ── Avatar ──────────────────────────────────────────────────────
           Container(
-            width: 56,
-            height: 56,
+            width: 52,
+            height: 52,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              border: Border.all(
-                color: AppColors.primaryWithOpacity20,
-                width: 2,
-              ),
-              color: AppColors.primaryWithOpacity10,
+              color: _roleBgColor,
+              border: Border.all(color: _roleColor.withValues(alpha: 0.3), width: 2),
             ),
-            child: imageUrl != null
-                ? ClipOval(
-                    child: Image.network(
-                      imageUrl!,
-                      fit: BoxFit.cover,
-                      errorBuilder: (_, e, s) => const Icon(
-                        Icons.person,
-                        color: AppColors.primary,
-                        size: 28,
-                      ),
-                    ),
-                  )
-                : const Icon(
-                    Icons.person,
-                    color: AppColors.primary,
-                    size: 28,
-                  ),
+            child: Center(
+              child: Text(
+                staff.name.isNotEmpty ? staff.name[0].toUpperCase() : '?',
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: _roleColor,
+                ),
+              ),
+            ),
           ),
-          const SizedBox(width: 16),
 
-          // Name & Department
+          const SizedBox(width: 12),
+
+          // ── Name + dept + role badge ─────────────────────────────────────
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  name,
+                  staff.name,
                   style: const TextStyle(
                     fontSize: 15,
                     fontWeight: FontWeight.bold,
@@ -84,63 +103,110 @@ class StaffListItem extends StatelessWidget {
                   ),
                   overflow: TextOverflow.ellipsis,
                 ),
-                const SizedBox(height: 2),
-                Text(
-                  department,
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: Colors.grey.shade500,
-                  ),
-                  overflow: TextOverflow.ellipsis,
+                const SizedBox(height: 3),
+                Row(
+                  children: [
+                    // Role badge
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 7, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: _roleBgColor,
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: Text(
+                        staff.role,
+                        style: TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.w700,
+                          color: _roleColor,
+                          letterSpacing: 0.3,
+                        ),
+                      ),
+                    ),
+                    if (staff.department.isNotEmpty) ...[
+                      const SizedBox(width: 6),
+                      Expanded(
+                        child: Text(
+                          staff.department,
+                          style: const TextStyle(
+                            fontSize: 12,
+                            color: AppColors.textSecondary,
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ],
                 ),
               ],
             ),
           ),
 
-          // Action Buttons
+          const SizedBox(width: 8),
+
+          // ── Action buttons ───────────────────────────────────────────────
           Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              // Favorite Button
-              GestureDetector(
-                onTap: onFavoriteTap,
-                child: Container(
-                  width: 36,
-                  height: 36,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: isFavorite
-                        ? AppColors.primaryWithOpacity10
-                        : const Color(0xFFF1F5F9),
-                  ),
-                  child: Icon(
-                    isFavorite ? Icons.favorite : Icons.favorite_border,
-                    size: 18,
-                    color: isFavorite ? AppColors.primary : Colors.grey.shade400,
-                  ),
-                ),
+              // Call — always shown
+              _ActionButton(
+                icon: Icons.call_rounded,
+                color: AppColors.success,
+                bgColor: const Color(0xFFD1FAE5),
+                onTap: onCallTap,
+                tooltip: 'Call ${staff.name}',
               ),
-              const SizedBox(width: 8),
-              // Contact Button
-              GestureDetector(
-                onTap: onContactTap,
-                child: Container(
-                  width: 36,
-                  height: 36,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: AppColors.primaryWithOpacity10,
-                  ),
-                  child: const Icon(
-                    Icons.mail_outline,
-                    size: 18,
-                    color: AppColors.primary,
-                  ),
+
+              // Email — only for Faculty / HOD / Principal
+              if (showEmail) ...[
+                const SizedBox(width: 8),
+                _ActionButton(
+                  icon: Icons.mail_rounded,
+                  color: AppColors.primary,
+                  bgColor: AppColors.primaryWithOpacity10,
+                  onTap: onEmailTap!,
+                  tooltip: 'Email ${staff.name}',
                 ),
-              ),
+              ],
             ],
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _ActionButton extends StatelessWidget {
+  final IconData icon;
+  final Color color;
+  final Color bgColor;
+  final VoidCallback onTap;
+  final String tooltip;
+
+  const _ActionButton({
+    required this.icon,
+    required this.color,
+    required this.bgColor,
+    required this.onTap,
+    required this.tooltip,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Tooltip(
+      message: tooltip,
+      child: GestureDetector(
+        onTap: onTap,
+        child: Container(
+          width: 38,
+          height: 38,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: bgColor,
+          ),
+          child: Icon(icon, size: 18, color: color),
+        ),
       ),
     );
   }
