@@ -4,42 +4,48 @@ import '../../../models/staff_model.dart';
 
 class StaffListItem extends StatelessWidget {
   final StaffModel staff;
+  final bool isFavorite;
+  final VoidCallback onFavoriteTap;
   final VoidCallback onCallTap;
-  final VoidCallback? onEmailTap; // null = don't show email button
 
   const StaffListItem({
     super.key,
     required this.staff,
+    required this.isFavorite,
+    required this.onFavoriteTap,
     required this.onCallTap,
-    this.onEmailTap,
   });
 
-  // Role badge color
-  Color get _roleColor {
+  // ── Role badge colors — blue-grey palette ──────────────────────────────
+  Color get _roleBadgeText {
     switch (staff.role) {
       case 'Principal':
-        return const Color(0xFF7C3AED); // purple
+        return const Color(0xFF1E3A5F); // dark blue
       case 'HOD':
-        return const Color(0xFF0369A1); // blue
+        return const Color(0xFF2C5282); // blue
       case 'Faculty':
-        return AppColors.primary;
+        return const Color(0xFF475569); // slate grey
+      case 'Staff':
+        return const Color(0xFF374151); // dark grey
       case 'Security':
-        return const Color(0xFF059669); // green
+        return const Color(0xFF92400E); // dark amber
       default:
         return AppColors.textSecondary;
     }
   }
 
-  Color get _roleBgColor {
+  Color get _roleBadgeBg {
     switch (staff.role) {
       case 'Principal':
-        return const Color(0xFFF3E8FF);
+        return const Color(0xFFDBEAFE); // light blue
       case 'HOD':
-        return const Color(0xFFE0F2FE);
+        return const Color(0xFFE2EAF4); // soft blue-grey
       case 'Faculty':
-        return AppColors.primaryWithOpacity10;
+        return const Color(0xFFF1F5F9); // very light grey
+      case 'Staff':
+        return const Color(0xFFE5E7EB); // light grey
       case 'Security':
-        return const Color(0xFFD1FAE5);
+        return const Color(0xFFFEF3C7); // soft amber
       default:
         return const Color(0xFFF1F5F9);
     }
@@ -47,41 +53,42 @@ class StaffListItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final showEmail = onEmailTap != null;
-
     return Container(
-      margin: const EdgeInsets.only(bottom: 10),
-      padding: const EdgeInsets.all(14),
+      margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: AppColors.border),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFFE8ECF0)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.03),
-            blurRadius: 6,
-            offset: const Offset(0, 2),
+            color: Colors.black.withValues(alpha: 0.025),
+            blurRadius: 4,
+            offset: const Offset(0, 1),
           ),
         ],
       ),
       child: Row(
         children: [
-          // ── Avatar ──────────────────────────────────────────────────────
+          // ── Avatar — consistent blue-grey for all ──────────────────────
           Container(
-            width: 52,
-            height: 52,
+            width: 46,
+            height: 46,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: _roleBgColor,
-              border: Border.all(color: _roleColor.withValues(alpha: 0.3), width: 2),
+              color: const Color(0xFFEEF2F7),
+              border: Border.all(
+                color: const Color(0xFFCDD5E0),
+                width: 1.5,
+              ),
             ),
             child: Center(
               child: Text(
                 staff.name.isNotEmpty ? staff.name[0].toUpperCase() : '?',
-                style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                  color: _roleColor,
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w700,
+                  color: Color(0xFF374151),
                 ),
               ),
             ),
@@ -89,7 +96,7 @@ class StaffListItem extends StatelessWidget {
 
           const SizedBox(width: 12),
 
-          // ── Name + dept + role badge ─────────────────────────────────────
+          // ── Name + role badge + department ─────────────────────────────
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -97,30 +104,31 @@ class StaffListItem extends StatelessWidget {
                 Text(
                   staff.name,
                   style: const TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.bold,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
                     color: AppColors.textPrimary,
+                    letterSpacing: -0.1,
                   ),
                   overflow: TextOverflow.ellipsis,
                 ),
-                const SizedBox(height: 3),
+                const SizedBox(height: 4),
                 Row(
                   children: [
                     // Role badge
                     Container(
                       padding: const EdgeInsets.symmetric(
-                          horizontal: 7, vertical: 2),
+                          horizontal: 6, vertical: 2),
                       decoration: BoxDecoration(
-                        color: _roleBgColor,
-                        borderRadius: BorderRadius.circular(6),
+                        color: _roleBadgeBg,
+                        borderRadius: BorderRadius.circular(4),
                       ),
                       child: Text(
-                        staff.role,
+                        staff.role.toUpperCase(),
                         style: TextStyle(
-                          fontSize: 10,
-                          fontWeight: FontWeight.w700,
-                          color: _roleColor,
-                          letterSpacing: 0.3,
+                          fontSize: 9,
+                          fontWeight: FontWeight.w800,
+                          color: _roleBadgeText,
+                          letterSpacing: 0.5,
                         ),
                       ),
                     ),
@@ -131,7 +139,7 @@ class StaffListItem extends StatelessWidget {
                           staff.department,
                           style: const TextStyle(
                             fontSize: 12,
-                            color: AppColors.textSecondary,
+                            color: AppColors.textHint,
                           ),
                           overflow: TextOverflow.ellipsis,
                         ),
@@ -145,68 +153,56 @@ class StaffListItem extends StatelessWidget {
 
           const SizedBox(width: 8),
 
-          // ── Action buttons ───────────────────────────────────────────────
+          // ── Actions: Favourite + Call ──────────────────────────────────
           Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              // Call — always shown
-              _ActionButton(
-                icon: Icons.call_rounded,
-                color: AppColors.success,
-                bgColor: const Color(0xFFD1FAE5),
-                onTap: onCallTap,
-                tooltip: 'Call ${staff.name}',
+              // Favourite
+              GestureDetector(
+                onTap: onFavoriteTap,
+                child: Container(
+                  width: 36,
+                  height: 36,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: isFavorite
+                        ? AppColors.primaryWithOpacity10
+                        : const Color(0xFFF1F5F9),
+                  ),
+                  child: Icon(
+                    isFavorite
+                        ? Icons.favorite_rounded
+                        : Icons.favorite_border_rounded,
+                    size: 17,
+                    color: isFavorite
+                        ? AppColors.primary
+                        : AppColors.textHint,
+                  ),
+                ),
               ),
 
-              // Email — only for Faculty / HOD / Principal
-              if (showEmail) ...[
-                const SizedBox(width: 8),
-                _ActionButton(
-                  icon: Icons.mail_rounded,
-                  color: AppColors.primary,
-                  bgColor: AppColors.primaryWithOpacity10,
-                  onTap: onEmailTap!,
-                  tooltip: 'Email ${staff.name}',
+              const SizedBox(width: 8),
+
+              // Call
+              GestureDetector(
+                onTap: onCallTap,
+                child: Container(
+                  width: 36,
+                  height: 36,
+                  decoration: const BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: Color(0xFFEEF2F7),
+                  ),
+                  child: const Icon(
+                    Icons.call_rounded,
+                    size: 17,
+                    color: Color(0xFF2C5282),
+                  ),
                 ),
-              ],
+              ),
             ],
           ),
         ],
-      ),
-    );
-  }
-}
-
-class _ActionButton extends StatelessWidget {
-  final IconData icon;
-  final Color color;
-  final Color bgColor;
-  final VoidCallback onTap;
-  final String tooltip;
-
-  const _ActionButton({
-    required this.icon,
-    required this.color,
-    required this.bgColor,
-    required this.onTap,
-    required this.tooltip,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Tooltip(
-      message: tooltip,
-      child: GestureDetector(
-        onTap: onTap,
-        child: Container(
-          width: 38,
-          height: 38,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            color: bgColor,
-          ),
-          child: Icon(icon, size: 18, color: color),
-        ),
       ),
     );
   }

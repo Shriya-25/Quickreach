@@ -20,33 +20,27 @@ class _StaffScreenState extends State<StaffScreen> {
   String _searchQuery = '';
   String _selectedFilter = 'All';
 
-  // Fixed filter order as specified
-  static const List<String> _filters = [
-    'All',
-    'Computer Science',
-    'Information Technology',
-    'ENTC',
-    'Instrumentation',
-    'Electrical',
-    'Staff',
-  ];
+  // Local favourites — stored in memory (can be persisted later)
+  final Set<String> _favourites = {};
+
+  void _toggleFavourite(String staffId) {
+    setState(() {
+      if (_favourites.contains(staffId)) {
+        _favourites.remove(staffId);
+      } else {
+        _favourites.add(staffId);
+      }
+    });
+  }
 
   List<StaffModel> _applyFilters(List<StaffModel> all) {
     var list = all.toList();
 
-    // Department / role filter
-    if (_selectedFilter != 'All') {
-      if (_selectedFilter == 'Staff') {
-        // Show Staff + Security + Principal roles
-        list = list
-            .where((s) =>
-                s.role == 'Staff' ||
-                s.role == 'Security' ||
-                s.role == 'Principal')
-            .toList();
-      } else {
-        list = list.where((s) => s.department == _selectedFilter).toList();
-      }
+    // FAV filter
+    if (_selectedFilter == 'FAV') {
+      list = list.where((s) => _favourites.contains(s.staffId)).toList();
+    } else if (_selectedFilter != 'All') {
+      list = list.where((s) => s.department == _selectedFilter).toList();
     }
 
     // Search
@@ -60,11 +54,14 @@ class _StaffScreenState extends State<StaffScreen> {
           .toList();
     }
 
-    // Sort: Principal → HOD → Faculty → Staff → Security
-    const order = ['Principal', 'HOD', 'Faculty', 'Staff', 'Security'];
+    // Sort: favourites first, then Principal → HOD → Faculty → Staff → Security
+    const roleOrder = ['Principal', 'HOD', 'Faculty', 'Staff', 'Security'];
     list.sort((a, b) {
-      final ai = order.indexOf(a.role);
-      final bi = order.indexOf(b.role);
+      final aFav = _favourites.contains(a.staffId) ? 0 : 1;
+      final bFav = _favourites.contains(b.staffId) ? 0 : 1;
+      if (aFav != bFav) return aFav.compareTo(bFav);
+      final ai = roleOrder.indexOf(a.role);
+      final bi = roleOrder.indexOf(b.role);
       if (ai != bi) return ai.compareTo(bi);
       return a.name.compareTo(b.name);
     });
@@ -74,13 +71,6 @@ class _StaffScreenState extends State<StaffScreen> {
 
   Future<void> _callStaff(String phone) async {
     final uri = Uri(scheme: 'tel', path: phone.replaceAll(' ', ''));
-    if (await canLaunchUrl(uri)) {
-      await launchUrl(uri);
-    }
-  }
-
-  Future<void> _emailStaff(String email) async {
-    final uri = Uri(scheme: 'mailto', path: email);
     if (await canLaunchUrl(uri)) {
       await launchUrl(uri);
     }
@@ -104,10 +94,12 @@ class _StaffScreenState extends State<StaffScreen> {
             child: SafeArea(
               bottom: false,
               child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
-                    child: const Text(
+                  // Title
+                  const Padding(
+                    padding: EdgeInsets.fromLTRB(16, 14, 16, 10),
+                    child: Text(
                       'Staff Directory',
                       style: TextStyle(
                         fontSize: 20,
@@ -120,27 +112,29 @@ class _StaffScreenState extends State<StaffScreen> {
 
                   // Search bar
                   Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 10),
                     child: Container(
-                      height: 46,
+                      height: 44,
                       decoration: BoxDecoration(
                         color: AppColors.backgroundLight,
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: AppColors.border),
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(color: const Color(0xFFDDE1E7)),
                       ),
                       child: TextField(
                         controller: _searchController,
                         onChanged: (v) => setState(() => _searchQuery = v),
+                        style: const TextStyle(
+                            fontSize: 13, color: AppColors.textPrimary),
                         decoration: InputDecoration(
-                          hintText: 'Search by name, department or role',
+                          hintText: 'Search name, department or role...',
                           hintStyle: const TextStyle(
                               fontSize: 13, color: AppColors.textHint),
                           prefixIcon: const Icon(Icons.search_rounded,
-                              color: AppColors.textHint, size: 20),
+                              color: AppColors.textHint, size: 18),
                           suffixIcon: _searchQuery.isNotEmpty
                               ? IconButton(
                                   icon: const Icon(Icons.clear_rounded,
-                                      size: 18, color: AppColors.textHint),
+                                      size: 16, color: AppColors.textHint),
                                   onPressed: () {
                                     _searchController.clear();
                                     setState(() => _searchQuery = '');
@@ -159,11 +153,10 @@ class _StaffScreenState extends State<StaffScreen> {
 
                   // Filter chips
                   DepartmentFilterChips(
-                    departments: _filters,
-                    selectedDepartment: _selectedFilter,
+                    selectedFilter: _selectedFilter,
                     onSelected: (f) => setState(() => _selectedFilter = f),
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 10),
                 ],
               ),
             ),
@@ -183,7 +176,8 @@ class _StaffScreenState extends State<StaffScreen> {
                 if (snapshot.hasError) {
                   return Center(
                     child: Text('Error: ${snapshot.error}',
-                        style: const TextStyle(color: AppColors.error)),
+                        style: const TextStyle(
+                            color: AppColors.error, fontSize: 13)),
                   );
                 }
 
@@ -195,12 +189,12 @@ class _StaffScreenState extends State<StaffScreen> {
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         Icon(Icons.people_outline_rounded,
-                            size: 56, color: AppColors.textHint),
+                            size: 52, color: AppColors.textHint),
                         SizedBox(height: 12),
                         Text(
                           'No staff data available.',
                           style: TextStyle(
-                              color: AppColors.textSecondary, fontSize: 15),
+                              color: AppColors.textSecondary, fontSize: 14),
                         ),
                       ],
                     ),
@@ -218,31 +212,28 @@ class _StaffScreenState extends State<StaffScreen> {
                             size: 48, color: AppColors.textHint),
                         const SizedBox(height: 12),
                         Text(
-                          'No results for "$_searchQuery"',
-                          style: const TextStyle(color: AppColors.textSecondary),
+                          _selectedFilter == 'FAV'
+                              ? 'No favourites yet.\nTap ⭐ on any staff card.'
+                              : 'No results found.',
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(
+                              color: AppColors.textSecondary, fontSize: 14),
                         ),
                       ],
                     ),
                   );
                 }
 
-                return ListView.builder(
-                  padding:
-                      const EdgeInsets.fromLTRB(16, 12, 16, 24),
-                  itemCount: filtered.length,
-                  itemBuilder: (context, index) {
-                    final staff = filtered[index];
-                    // Show email only for Faculty, HOD, Principal
-                    final showEmail = ['Faculty', 'HOD', 'Principal']
-                        .contains(staff.role);
-                    return StaffListItem(
-                      staff: staff,
-                      onCallTap: () => _callStaff(staff.phone),
-                      onEmailTap: (showEmail && staff.email != null)
-                          ? () => _emailStaff(staff.email!)
-                          : null,
-                    );
-                  },
+                return ListView(
+                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
+                  children: filtered
+                      .map((s) => StaffListItem(
+                            staff: s,
+                            isFavorite: _favourites.contains(s.staffId),
+                            onFavoriteTap: () => _toggleFavourite(s.staffId),
+                            onCallTap: () => _callStaff(s.phone),
+                          ))
+                      .toList(),
                 );
               },
             ),
