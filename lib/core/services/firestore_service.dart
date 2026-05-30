@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/foundation.dart';
 import '../../models/user_model.dart';
 import '../../models/admin_model.dart';
 import '../../models/report_model.dart';
@@ -18,8 +19,10 @@ class FirestoreService {
           .collection(AppConstants.adminsCollection)
           .doc(uid)
           .get();
+      debugPrint('isAdmin check — collection: ${AppConstants.adminsCollection}, uid: $uid, exists: ${doc.exists}');
       return doc.exists;
-    } catch (_) {
+    } catch (e) {
+      debugPrint('isAdmin error: $e');
       return false;
     }
   }
@@ -45,10 +48,11 @@ class FirestoreService {
     return _firestore
         .collection(AppConstants.usersCollection)
         .where('approvalStatus', isEqualTo: AppConstants.approvalPending)
-        .orderBy('createdAt', descending: false)
         .snapshots()
-        .map((snap) =>
-            snap.docs.map((d) => UserModel.fromMap(d.data())).toList());
+        .map((snap) => snap.docs
+            .map((d) => UserModel.fromMap(d.data()))
+            .toList()
+          ..sort((a, b) => a.createdAt.compareTo(b.createdAt)));
   }
 
   /// Stream of all users with approvalStatus == "approved".
@@ -56,10 +60,11 @@ class FirestoreService {
     return _firestore
         .collection(AppConstants.usersCollection)
         .where('approvalStatus', isEqualTo: AppConstants.approvalApproved)
-        .orderBy('createdAt', descending: false)
         .snapshots()
-        .map((snap) =>
-            snap.docs.map((d) => UserModel.fromMap(d.data())).toList());
+        .map((snap) => snap.docs
+            .map((d) => UserModel.fromMap(d.data()))
+            .toList()
+          ..sort((a, b) => a.createdAt.compareTo(b.createdAt)));
   }
 
   /// Updates the approvalStatus field of a user document.
@@ -99,21 +104,23 @@ class FirestoreService {
     return _firestore
         .collection(AppConstants.reportsCollection)
         .where('visibility', isEqualTo: AppConstants.visibilityPublic)
-        .where('status', isNotEqualTo: AppConstants.statusRejected)
-        .orderBy('createdAt', descending: true)
         .snapshots()
-        .map((snap) =>
-            snap.docs.map((d) => ReportModel.fromMap(d.data())).toList());
+        .map((snap) => snap.docs
+            .map((d) => ReportModel.fromMap(d.data()))
+            .where((r) => r.status != AppConstants.statusRejected)
+            .toList()
+          ..sort((a, b) => b.createdAt.compareTo(a.createdAt)));
   }
 
   Stream<List<ReportModel>> getUserReports(String userId) {
     return _firestore
         .collection(AppConstants.reportsCollection)
         .where('userId', isEqualTo: userId)
-        .orderBy('createdAt', descending: true)
         .snapshots()
-        .map((snap) =>
-            snap.docs.map((d) => ReportModel.fromMap(d.data())).toList());
+        .map((snap) => snap.docs
+            .map((d) => ReportModel.fromMap(d.data()))
+            .toList()
+          ..sort((a, b) => b.createdAt.compareTo(a.createdAt)));
   }
 
   // ==================== STAFF ====================
@@ -132,10 +139,11 @@ class FirestoreService {
     return _firestore
         .collection(AppConstants.alertsCollection)
         .where('isActive', isEqualTo: true)
-        .orderBy('timestamp', descending: true)
         .snapshots()
-        .map((snap) =>
-            snap.docs.map((d) => AlertModel.fromMap(d.data())).toList());
+        .map((snap) => snap.docs
+            .map((d) => AlertModel.fromMap(d.data()))
+            .toList()
+          ..sort((a, b) => b.timestamp.compareTo(a.timestamp)));
   }
 
   // ==================== SOS ====================
