@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/constants/app_constants.dart';
+import '../../../core/services/firestore_service.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -22,33 +23,56 @@ class _SplashScreenState extends State<SplashScreen>
     super.initState();
     _controller = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 1500),
+      duration: const Duration(milliseconds: 1400),
     );
-
     _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
       CurvedAnimation(parent: _controller, curve: Curves.easeIn),
     );
-
     _scaleAnimation = Tween<double>(begin: 0.5, end: 1.0).animate(
       CurvedAnimation(parent: _controller, curve: Curves.elasticOut),
     );
-
     _controller.forward();
 
-    // Check auth state after animation
-    Future.delayed(const Duration(seconds: 2), () {
-      if (mounted) {
-        _checkAuthState();
-      }
+    Future.delayed(const Duration(milliseconds: 2200), () {
+      if (mounted) _resolveRoute();
     });
   }
 
-  void _checkAuthState() {
+  Future<void> _resolveRoute() async {
     final user = FirebaseAuth.instance.currentUser;
-    if (user != null) {
-      context.go('/home');
-    } else {
-      context.go('/login');
+
+    if (user == null) {
+      if (mounted) context.go('/login');
+      return;
+    }
+
+    final firestoreService = FirestoreService();
+
+    // Check admin first
+    final admin = await firestoreService.isAdmin(user.uid);
+    if (admin) {
+      if (mounted) context.go('/admin');
+      return;
+    }
+
+    // Check user approval status
+    final userModel = await firestoreService.getUserById(user.uid);
+    if (userModel == null) {
+      if (mounted) context.go('/login');
+      return;
+    }
+
+    if (mounted) {
+      switch (userModel.approvalStatus) {
+        case AppConstants.approvalApproved:
+          context.go('/home');
+          break;
+        case AppConstants.approvalRejected:
+          context.go('/rejected');
+          break;
+        default:
+          context.go('/pending');
+      }
     }
   }
 
@@ -70,7 +94,6 @@ class _SplashScreenState extends State<SplashScreen>
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                // App Icon
                 Container(
                   width: 120,
                   height: 120,
@@ -86,13 +109,12 @@ class _SplashScreenState extends State<SplashScreen>
                     ],
                   ),
                   child: const Icon(
-                    Icons.shield,
+                    Icons.shield_rounded,
                     size: 60,
                     color: AppColors.primary,
                   ),
                 ),
                 const SizedBox(height: 24),
-                // App Name
                 const Text(
                   AppConstants.appName,
                   style: TextStyle(
@@ -103,7 +125,6 @@ class _SplashScreenState extends State<SplashScreen>
                   ),
                 ),
                 const SizedBox(height: 8),
-                // Tagline
                 Text(
                   AppConstants.appTagline,
                   style: TextStyle(

@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/services/auth_service.dart';
+import '../../../core/services/firestore_service.dart';
+import '../../../core/constants/app_constants.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -27,6 +29,7 @@ class _LoginScreenState extends State<LoginScreen>
 
   // Shared state
   final _authService = AuthService();
+  final _firestoreService = FirestoreService();
   bool _obscureStudentPassword = true;
   bool _obscureAdminPassword = true;
   bool _isLoading = false;
@@ -61,12 +64,21 @@ class _LoginScreenState extends State<LoginScreen>
     if (!_studentFormKey.currentState!.validate()) return;
     setState(() => _isLoading = true);
     try {
-      // College ID login: treat as email (org may suffix domain) or direct email
-      await _authService.signIn(
+      final user = await _authService.signIn(
         email: _collegeIdController.text.trim(),
         password: _studentPasswordController.text,
       );
-      if (mounted) context.go('/home');
+      if (!mounted) return;
+      switch (user.approvalStatus) {
+        case AppConstants.approvalApproved:
+          context.go('/home');
+          break;
+        case AppConstants.approvalRejected:
+          context.go('/rejected');
+          break;
+        default:
+          context.go('/pending');
+      }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -82,11 +94,28 @@ class _LoginScreenState extends State<LoginScreen>
     if (!_adminFormKey.currentState!.validate()) return;
     setState(() => _isLoading = true);
     try {
-      await _authService.signIn(
+      final user = await _authService.signIn(
         email: _adminEmailController.text.trim(),
         password: _adminPasswordController.text,
       );
-      if (mounted) context.go('/home');
+      if (!mounted) return;
+      // Check admins collection
+      final isAdmin = await _firestoreService.isAdmin(user.uid);
+      if (!mounted) return;
+      if (isAdmin) {
+        context.go('/admin');
+      } else {
+        // Signed in but not an admin — sign out and show error
+        await _authService.signOut();
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('This account does not have admin access.'),
+              backgroundColor: AppColors.error,
+            ),
+          );
+        }
+      }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -307,19 +336,20 @@ class _LoginScreenState extends State<LoginScreen>
         key: key,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // College ID
-          _fieldLabel('College ID'),
+          // College Email
+          _fieldLabel('College Email'),
           const SizedBox(height: 8),
           TextFormField(
             controller: _collegeIdController,
-            keyboardType: TextInputType.text,
+            keyboardType: TextInputType.emailAddress,
             textInputAction: TextInputAction.next,
             decoration: _inputDeco(
-              hint: 'Enter your College ID',
-              icon: Icons.badge_outlined,
+              hint: 'Enter your College Email',
+              icon: Icons.mail_outline_rounded,
             ),
             validator: (v) {
-              if (v == null || v.isEmpty) return 'Please enter your College ID';
+              if (v == null || v.isEmpty) return 'Please enter your College Email';
+              if (!v.contains('@')) return 'Please enter a valid email';
               return null;
             },
           ),

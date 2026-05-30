@@ -73,8 +73,8 @@ class _SignupScreenState extends State<SignupScreen>
         fullName: _nameController.text.trim(),
         email: _emailController.text.trim(),
         password: _passwordController.text,
-        idNumber: _idController.text.trim(),
-        orgCode: 'DEFAULT', // TODO: auto-detect from email domain or org code field
+        collegeId: _idController.text.trim(),
+        role: _selectedRole,
       );
 
       if (mounted) {
