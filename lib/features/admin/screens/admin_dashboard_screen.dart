@@ -227,7 +227,7 @@ class _UserCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(14),
@@ -332,17 +332,23 @@ class _UserCard extends StatelessWidget {
               children: [
                 Expanded(
                   child: SizedBox(
-                    height: 40,
+                    height: 44,
                     child: ElevatedButton.icon(
                       onPressed: onApprove,
                       icon: const Icon(Icons.check_rounded, size: 16),
-                      label: const Text('Approve',
-                          style: TextStyle(
-                              fontSize: 13, fontWeight: FontWeight.bold)),
+                      label: const Text(
+                        'Approve',
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.bold,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: AppColors.success,
                         foregroundColor: Colors.white,
                         elevation: 0,
+                        padding: const EdgeInsets.symmetric(horizontal: 8),
                         shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(10)),
                       ),
@@ -352,16 +358,23 @@ class _UserCard extends StatelessWidget {
                 const SizedBox(width: 10),
                 Expanded(
                   child: SizedBox(
-                    height: 40,
+                    height: 44,
                     child: OutlinedButton.icon(
                       onPressed: onReject,
                       icon: const Icon(Icons.close_rounded, size: 16),
-                      label: const Text('Reject',
-                          style: TextStyle(
-                              fontSize: 13, fontWeight: FontWeight.bold)),
+                      label: const Text(
+                        'Reject',
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.bold,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
                       style: OutlinedButton.styleFrom(
                         foregroundColor: AppColors.error,
-                        side: const BorderSide(color: AppColors.primaryWithOpacity20),
+                        padding: const EdgeInsets.symmetric(horizontal: 8),
+                        side: const BorderSide(
+                            color: AppColors.primaryWithOpacity20),
                         shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(10)),
                       ),
