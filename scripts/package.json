@@ -1,0 +1,12 @@
+{
+  "name": "quickreach-scripts",
+  "version": "1.0.0",
+  "description": "Admin scripts for QuickReach Firebase seeding",
+  "type": "module",
+  "scripts": {
+    "seed-staff": "node seed_staff.js"
+  },
+  "dependencies": {
+    "firebase-admin": "^12.0.0"
+  }
+}
